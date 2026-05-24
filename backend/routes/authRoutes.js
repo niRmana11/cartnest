@@ -166,4 +166,237 @@ router.post("/logout", (req, res) => {
   });
 });
 
+// ===== PASSKEY (WebAuthn) ROUTES =====
+
+import * as webauthn from "../config/webauthn.js";
+
+/**
+ * Route: POST /api/auth/passkey/register/options
+ * Generate registration challenge for passkey signup
+ *
+ * Request body: { email }
+ * Response: { challenge, user, rp, ... }
+ */
+router.post("/passkey/register/options", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "Email already registered",
+      });
+    }
+
+    // Generate challenge
+    const options = await webauthn.generatePasskeyRegistrationOptions(email);
+
+    // Store challenge in session (we'll verify it in the next step)
+    // For now, we'll send it back to frontend and they'll send it back
+    res.json({
+      success: true,
+      options,
+    });
+  } catch (error) {
+    console.error("Passkey registration options error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * Route: POST /api/auth/passkey/register/verify
+ * Verify passkey credential and create user
+ *
+ * Request body: { email, response, challenge }
+ */
+router.post("/passkey/register/verify", async (req, res) => {
+  try {
+    const { email, response, challenge } = req.body;
+
+    if (!email || !response || !challenge) {
+      return res.status(400).json({
+        success: false,
+        message: "Email, response, and challenge are required",
+      });
+    }
+
+    // Check if user already exists
+    let user = await User.findOne({ email });
+    if (user && user.passkeys.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Passkey already registered for this email",
+      });
+    }
+
+    // Verify the passkey credential
+    const credential = await webauthn.verifyPasskeyRegistration(
+      response,
+      challenge,
+    );
+
+    if (!user) {
+      // Create new user with passkey
+      user = new User({
+        name: email.split("@")[0], // Use email prefix as default name
+        email,
+        provider: "passkey",
+        passkeys: [credential],
+      });
+    } else {
+      // Add passkey to existing user
+      user.passkeys.push(credential);
+    }
+
+    await user.save();
+
+    console.log(`Passkey registered for: ${user.email}`);
+
+    res.json({
+      success: true,
+      message: "Passkey registered successfully",
+      user: {
+        id: user._id,
+        email: user.email,
+        provider: user.provider,
+      },
+    });
+  } catch (error) {
+    console.error("Passkey registration verify error:", error);
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * Route: POST /api/auth/passkey/login/options
+ * Generate login challenge for passkey login
+ *
+ * Request body: { email }
+ * Response: { challenge, allowCredentials, ... }
+ */
+router.post("/passkey/login/options", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    // Find user and check if they have passkeys
+    const user = await User.findOne({ email });
+    if (!user || user.passkeys.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No passkey found for this email",
+      });
+    }
+
+    // Generate login challenge
+    const allowedCredentialIDs = user.passkeys.map((pk) => pk.credentialId);
+    const options =
+      await webauthn.generatePasskeyLoginOptions(allowedCredentialIDs);
+
+    res.json({
+      success: true,
+      options,
+    });
+  } catch (error) {
+    console.error("Passkey login options error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * Route: POST /api/auth/passkey/login/verify
+ * Verify passkey login and issue JWT
+ *
+ * Request body: { email, response, challenge }
+ */
+router.post("/passkey/login/verify", async (req, res) => {
+  try {
+    const { email, response, challenge } = req.body;
+
+    if (!email || !response || !challenge) {
+      return res.status(400).json({
+        success: false,
+        message: "Email, response, and challenge are required",
+      });
+    }
+
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user || user.passkeys.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Passkey not found",
+      });
+    }
+
+    // Find the matching passkey credential
+    const passkey = user.passkeys.find((pk) => pk.credentialId === response.id);
+    if (!passkey) {
+      return res.status(404).json({
+        success: false,
+        message: "Credential not found",
+      });
+    }
+
+    // Verify the passkey login
+    const verification = await webauthn.verifyPasskeyLogin(
+      response,
+      challenge,
+      passkey.publicKey,
+      passkey.counter,
+    );
+
+    // Update counter to prevent replay attacks
+    passkey.counter = verification.newCounter;
+    await user.save();
+
+    // Generate JWT
+    const token = generateJWT(user._id);
+    setJWTCookie(res, token);
+
+    console.log(`Passkey login successful: ${user.email}`);
+
+    res.json({
+      success: true,
+      message: "Logged in successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        provider: user.provider,
+      },
+    });
+  } catch (error) {
+    console.error("Passkey login verify error:", error);
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 export default router;
