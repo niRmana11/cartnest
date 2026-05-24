@@ -1,9 +1,11 @@
+import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
-import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
+import passport from "./config/passport.js";
+import authRoutes from "./routes/authRoutes.js";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -30,6 +32,12 @@ app.use(express.urlencoded({ extended: true }));
 
 // Cookie parser: Parse cookies from incoming requests
 app.use(cookieParser());
+
+// Initialize Passport.js
+app.use(passport.initialize());
+
+// ===== MOUNT ROUTES =====
+app.use("/api/auth", authRoutes);
 
 // ===== BASIC ROUTES (Temporary - for testing) =====
 
