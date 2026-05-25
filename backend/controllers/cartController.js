@@ -192,9 +192,16 @@ export const updateCartItem = async (req, res) => {
       });
     }
 
-    // Check stock availability
+    // Check product availability + stock
+    const qty = Number(quantity);
     const product = await Product.findById(itemId);
-    if (product && !product.isInStock(quantity)) {
+    if (!product || !product.isActive) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found or is no longer available",
+      });
+    }
+    if (!product.isInStock(qty)) {
       return res.status(400).json({
         success: false,
         message: `Insufficient stock. Available: ${product.stock}`,
@@ -202,7 +209,7 @@ export const updateCartItem = async (req, res) => {
     }
 
     // Update quantity
-    cart.updateItemQuantity(itemId, quantity);
+    cart.updateItemQuantity(itemId, qty);
     await cart.save();
 
     console.log(`Cart item updated: qty = ${quantity}`);
