@@ -8,6 +8,10 @@ import passport from "./config/passport.js";
 import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
+import {
+  generalLimiter,
+  cartLimiter,
+} from "./middleware/rateLimitMiddleware.js";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -37,6 +41,13 @@ app.use(cookieParser());
 
 // Initialize Passport.js
 app.use(passport.initialize());
+
+// ===== RATE LIMITING =====
+// Apply general rate limiter to all API routes
+app.use("/api/", generalLimiter);
+
+// Apply cart limiter to cart routes
+app.use("/api/cart", cartLimiter);
 
 // ===== MOUNT ROUTES =====
 // mount auth routes

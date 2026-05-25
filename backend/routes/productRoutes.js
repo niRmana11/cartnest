@@ -12,6 +12,8 @@ import {
   uploadSingle,
   handleUploadError,
 } from "../middleware/uploadMiddleware.js";
+import requireAdmin from "../middleware/adminMiddleware.js";
+import { uploadLimiter } from "../middleware/rateLimitMiddleware.js";
 
 /**
  * Product Routes
@@ -75,6 +77,8 @@ router.get("/category/:slug", getProductsByCategory);
 router.post(
   "/",
   verifyToken, // Must be logged in
+  requireAdmin, // Must be admin
+  uploadLimiter, // Rate limit uploads
   uploadSingle, // Handle file upload
   handleUploadError, // Handle upload errors
   createProduct,
@@ -99,6 +103,8 @@ router.post(
 router.put(
   "/:id",
   verifyToken, // Must be logged in
+  requireAdmin, // Must be admin
+  uploadLimiter, // Rate limit uploads
   uploadSingle, // Handle file upload
   handleUploadError, // Handle upload errors
   updateProduct,
@@ -112,6 +118,6 @@ router.put(
  *
  * Response: { success, message }
  */
-router.delete("/:id", verifyToken, deleteProduct);
+router.delete("/:id", verifyToken, requireAdmin, deleteProduct);
 
 export default router;
