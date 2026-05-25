@@ -7,6 +7,7 @@ import { connectDB } from "./config/db.js";
 import passport from "./config/passport.js";
 import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
+import cartRoutes from "./routes/cartRoutes.js";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -42,6 +43,8 @@ app.use(passport.initialize());
 app.use("/api/auth", authRoutes);
 // mount product routes
 app.use("/api/products", productRoutes);
+// mount cart routes
+app.use("/api/cart", cartRoutes);
 
 /**
  * Health check endpoint
