@@ -135,7 +135,7 @@ export const createProduct = async (req, res) => {
     const { name, description, price, category, stock } = req.body;
 
     // Validate required fields
-    if (!name || !price || !category) {
+    if (!name || price == null || price === "" || !category) {
       return res.status(400).json({
         success: false,
         message: "Name, price, and category are required",
@@ -234,7 +234,7 @@ export const updateProduct = async (req, res) => {
     // Update basic fields
     if (name) product.name = name;
     if (description !== undefined) product.description = description;
-    if (price) {
+    if (price !== undefined) {
       if (isNaN(price) || price < 0) {
         return res.status(400).json({
           success: false,
@@ -243,7 +243,16 @@ export const updateProduct = async (req, res) => {
       }
       product.price = parseFloat(price);
     }
-    if (stock !== undefined) product.stock = parseInt(stock);
+    if (stock !== undefined) {
+      const parsedStock = Number(stock);
+      if (!Number.isInteger(parsedStock) || parsedStock < 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Stock must be a non-negative integer",
+        });
+      }
+      product.stock = parsedStock;
+    }
 
     // Verify category if provided
     if (category) {

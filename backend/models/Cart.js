@@ -55,14 +55,11 @@ const cartSchema = new mongoose.Schema(
  * populate: Auto-populate product details when fetching cart
  * Usage: const cart = await Cart.findById(id).populate('product')
  */
-cartSchema.pre(/^find/, function () {
-  // Only populate if the query method is a find (not update/delete)
-  if (this.getOptions().includeResult !== false) {
-    this.populate({
-      path: "items.product",
-      select: "name price image stock category",
-    });
-  }
+cartSchema.pre(["find", "findOne"], function () {
+  this.populate({
+    path: "items.product",
+    select: "name price image stock category",
+  });
 });
 
 // ===== INSTANCE METHODS =====
