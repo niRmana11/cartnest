@@ -40,10 +40,12 @@ const generateJWT = (userId) => {
  * secure: true in production only (requires HTTPS)
  */
 const setJWTCookie = (res, token) => {
+  const isProd = process.env.NODE_ENV === "production";
   res.cookie("token", token, {
     httpOnly: true, // Not readable by JS (XSS protection)
-    sameSite: "strict", // CSRF protection
-    secure: process.env.NODE_ENV === "production", // HTTPS only in production
+    sameSite: isProd ? "none" : "strict", // Use None for cross-site frontend/API in prod
+    secure: isProd, // HTTPS only in production
+    path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
   });
 };
@@ -94,7 +96,9 @@ router.get(
       res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/home`);
     } catch (error) {
       console.error("Google callback error:", error);
-      res.redirect(`${process.env.CLIENT_URL}/login?error=auth_failed`);
+      res.redirect(
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/login?error=auth_failed`,
+      );
     }
   },
 );
@@ -154,10 +158,12 @@ router.get("/me", verifyToken, async (req, res) => {
  * We clear the HTTP-only cookie (frontend cannot access it directly)
  */
 router.post("/logout", (req, res) => {
+  const isProd = process.env.NODE_ENV === "production";
   res.clearCookie("token", {
     httpOnly: true,
-    sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: isProd ? "none" : "strict",
+    secure: isProd,
+    path: "/",
   });
 
   res.json({
@@ -190,10 +196,11 @@ router.post("/passkey/register/options", async (req, res) => {
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    // Allow attaching a first passkey to an existing account, but block duplicates
+    if (existingUser && existingUser.passkeys?.length > 0) {
       return res.status(400).json({
         success: false,
-        message: "Email already registered",
+        message: "Passkey already registered for this email",
       });
     }
 
@@ -354,7 +361,13 @@ router.post("/passkey/login/verify", async (req, res) => {
     }
 
     // Find the matching passkey credential
-    const passkey = user.passkeys.find((pk) => pk.credentialId === response.id);
+    // Find the matching passkey credential (normalize base64url -> base64)
+    const responseCredentialId = Buffer.from(response.id, "base64url").toString(
+      "base64",
+    );
+    const passkey = user.passkeys.find(
+      (pk) => pk.credentialId === responseCredentialId,
+    );
     if (!passkey) {
       return res.status(404).json({
         success: false,
@@ -368,6 +381,7 @@ router.post("/passkey/login/verify", async (req, res) => {
       challenge,
       passkey.publicKey,
       passkey.counter,
+      passkey.credentialId,
     );
 
     // Update counter to prevent replay attacks

@@ -78,7 +78,7 @@ export const verifyPasskeyRegistration = async (response, challenge) => {
     }
 
     // Extract the credential info
-    const credentialID = Buffer.from(
+    const credentialId = Buffer.from(
       verification.registrationInfo.credentialID,
     ).toString("base64");
 
@@ -87,7 +87,7 @@ export const verifyPasskeyRegistration = async (response, challenge) => {
     );
 
     return {
-      credentialID,
+      credentialId,
       publicKey,
       counter: verification.registrationInfo.counter,
     };
@@ -141,6 +141,7 @@ export const verifyPasskeyLogin = async (
   challenge,
   storedPublicKey,
   storedCounter,
+  storedCredentialId,
 ) => {
   try {
     const verification = await verifyAuthenticationResponse({
@@ -149,7 +150,7 @@ export const verifyPasskeyLogin = async (
       expectedOrigin: origin,
       expectedRPID: rpID,
       credentialPublicKey: storedPublicKey,
-      credentialID: response.id,
+      credentialID: Buffer.from(storedCredentialId, "base64"),
       signCount: storedCounter,
     });
 
