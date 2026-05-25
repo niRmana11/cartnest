@@ -3,6 +3,7 @@ import passport from "passport";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
+import { challengeStore } from "../utils/challengeStore.js";
 
 const router = express.Router();
 
@@ -182,6 +183,8 @@ import * as webauthn from "../config/webauthn.js";
  *
  * Request body: { email }
  * Response: { challenge, user, rp, ... }
+ *
+ * Security: Challenge is stored server-side with 5-minute TTL
  */
 router.post("/passkey/register/options", async (req, res) => {
   try {
@@ -194,9 +197,8 @@ router.post("/passkey/register/options", async (req, res) => {
       });
     }
 
-    // Check if user already exists
+    // Check if user already exists with passkey
     const existingUser = await User.findOne({ email });
-    // Allow attaching a first passkey to an existing account, but block duplicates
     if (existingUser && existingUser.passkeys?.length > 0) {
       return res.status(400).json({
         success: false,
@@ -207,8 +209,9 @@ router.post("/passkey/register/options", async (req, res) => {
     // Generate challenge
     const options = await webauthn.generatePasskeyRegistrationOptions(email);
 
-    // Store challenge in session (we'll verify it in the next step)
-    // For now, we'll send it back to frontend and they'll send it back
+    // Store challenge server-side with TTL
+    challengeStore.store(email, "registration", options.challenge);
+
     res.json({
       success: true,
       options,
@@ -226,16 +229,27 @@ router.post("/passkey/register/options", async (req, res) => {
  * Route: POST /api/auth/passkey/register/verify
  * Verify passkey credential and create user
  *
- * Request body: { email, response, challenge }
+ * Request body: { email, response }
+ *
+ * Security: Challenge is retrieved from server-side store (not client-supplied)
  */
 router.post("/passkey/register/verify", async (req, res) => {
   try {
-    const { email, response, challenge } = req.body;
+    const { email, response } = req.body;
 
-    if (!email || !response || !challenge) {
+    if (!email || !response) {
       return res.status(400).json({
         success: false,
-        message: "Email, response, and challenge are required",
+        message: "Email and response are required",
+      });
+    }
+
+    // Retrieve challenge from server-side store (not client-supplied!)
+    const storedChallenge = challengeStore.get(email, "registration");
+    if (!storedChallenge) {
+      return res.status(400).json({
+        success: false,
+        message: "No valid challenge found. Please start registration again.",
       });
     }
 
@@ -248,16 +262,19 @@ router.post("/passkey/register/verify", async (req, res) => {
       });
     }
 
-    // Verify the passkey credential
+    // Verify the passkey credential (using STORED challenge, not client-supplied)
     const credential = await webauthn.verifyPasskeyRegistration(
       response,
-      challenge,
+      storedChallenge, // ← Server-side stored challenge, not from client
     );
+
+    // Remove challenge (one-time use)
+    challengeStore.remove(email, "registration");
 
     if (!user) {
       // Create new user with passkey
       user = new User({
-        name: email.split("@")[0], // Use email prefix as default name
+        name: email.split("@")[0],
         email,
         provider: "passkey",
         passkeys: [credential],
@@ -269,7 +286,7 @@ router.post("/passkey/register/verify", async (req, res) => {
 
     await user.save();
 
-    console.log(`Passkey registered for: ${user.email}`);
+    console.log(`✅ Passkey registered for: ${user.email}`);
 
     res.json({
       success: true,
@@ -295,6 +312,8 @@ router.post("/passkey/register/verify", async (req, res) => {
  *
  * Request body: { email }
  * Response: { challenge, allowCredentials, ... }
+ *
+ * Security: Challenge is stored server-side with 5-minute TTL
  */
 router.post("/passkey/login/options", async (req, res) => {
   try {
@@ -321,6 +340,9 @@ router.post("/passkey/login/options", async (req, res) => {
     const options =
       await webauthn.generatePasskeyLoginOptions(allowedCredentialIDs);
 
+    // Store challenge server-side with TTL
+    challengeStore.store(email, "login", options.challenge);
+
     res.json({
       success: true,
       options,
@@ -338,16 +360,27 @@ router.post("/passkey/login/options", async (req, res) => {
  * Route: POST /api/auth/passkey/login/verify
  * Verify passkey login and issue JWT
  *
- * Request body: { email, response, challenge }
+ * Request body: { email, response }
+ *
+ * Security: Challenge is retrieved from server-side store (not client-supplied)
  */
 router.post("/passkey/login/verify", async (req, res) => {
   try {
-    const { email, response, challenge } = req.body;
+    const { email, response } = req.body;
 
-    if (!email || !response || !challenge) {
+    if (!email || !response) {
       return res.status(400).json({
         success: false,
-        message: "Email, response, and challenge are required",
+        message: "Email and response are required",
+      });
+    }
+
+    // Retrieve challenge from server-side store (not client-supplied!)
+    const storedChallenge = challengeStore.get(email, "login");
+    if (!storedChallenge) {
+      return res.status(400).json({
+        success: false,
+        message: "No valid challenge found. Please start login again.",
       });
     }
 
@@ -361,7 +394,6 @@ router.post("/passkey/login/verify", async (req, res) => {
     }
 
     // Find the matching passkey credential
-    // Find the matching passkey credential (normalize base64url -> base64)
     const responseCredentialId = Buffer.from(response.id, "base64url").toString(
       "base64",
     );
@@ -375,14 +407,17 @@ router.post("/passkey/login/verify", async (req, res) => {
       });
     }
 
-    // Verify the passkey login
+    // Verify the passkey login (using STORED challenge, not client-supplied)
     const verification = await webauthn.verifyPasskeyLogin(
       response,
-      challenge,
+      storedChallenge, // ← Server-side stored challenge, not from client
       passkey.publicKey,
       passkey.counter,
       passkey.credentialId,
     );
+
+    // Remove challenge (one-time use)
+    challengeStore.remove(email, "login");
 
     // Update counter to prevent replay attacks
     passkey.counter = verification.newCounter;
@@ -392,7 +427,7 @@ router.post("/passkey/login/verify", async (req, res) => {
     const token = generateJWT(user._id);
     setJWTCookie(res, token);
 
-    console.log(`Passkey login successful: ${user.email}`);
+    console.log(`✅ Passkey login successful: ${user.email}`);
 
     res.json({
       success: true,
