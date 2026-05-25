@@ -20,7 +20,7 @@ export const generalLimiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   skip: (req) => {
     // Skip rate limiting for health check
-    return req.path === "/api/health";
+    return req.path === "/health" || req.originalUrl === "/api/health";
   },
 });
 
