@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { connectDB } from "./config/db.js";
 import passport from "./config/passport.js";
 import authRoutes from "./routes/authRoutes.js";
+import productRoutes from "./routes/productRoutes.js";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -37,9 +38,10 @@ app.use(cookieParser());
 app.use(passport.initialize());
 
 // ===== MOUNT ROUTES =====
+// mount auth routes
 app.use("/api/auth", authRoutes);
-
-// ===== BASIC ROUTES (Temporary - for testing) =====
+// mount product routes
+app.use("/api/products", productRoutes);
 
 /**
  * Health check endpoint
