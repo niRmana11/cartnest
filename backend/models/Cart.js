@@ -88,8 +88,9 @@ cartSchema.methods.getItemCount = function () {
  * @returns item or null
  */
 cartSchema.methods.findItem = function (productId) {
+  const targetId = productId?.toString();
   return this.items.find(
-    (item) => item.product.toString() === productId.toString(),
+    (item) => (item.product?._id ?? item.product).toString() === targetId,
   );
 };
 
@@ -101,16 +102,17 @@ cartSchema.methods.findItem = function (productId) {
  * @returns modified cart
  */
 cartSchema.methods.addItem = function (productId, quantity, priceAtTime) {
+  const qty = Number(quantity);
   const existingItem = this.findItem(productId);
 
   if (existingItem) {
     // Item already in cart — increase quantity
-    existingItem.quantity += quantity;
+    existingItem.quantity += qty;
   } else {
     // New item — add to cart
     this.items.push({
       product: productId,
-      quantity,
+      quantity: qty,
       priceAtTime,
     });
   }
@@ -124,8 +126,9 @@ cartSchema.methods.addItem = function (productId, quantity, priceAtTime) {
  * @returns modified cart
  */
 cartSchema.methods.removeItem = function (productId) {
+  const targetId = productId?.toString();
   this.items = this.items.filter(
-    (item) => item.product.toString() !== productId.toString(),
+    (item) => (item.product?._id ?? item.product).toString() !== targetId,
   );
   return this;
 };
