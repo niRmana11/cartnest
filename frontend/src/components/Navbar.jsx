@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ShoppingCart, Menu, X, LogOut, User } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
+import { useCartStore } from "../store/cartStore";
 
 /**
  * Navbar Component
@@ -23,8 +24,8 @@ export default function Navbar() {
   // Get auth state from Zustand store
   const { user, isAuthenticated, logout } = useAuthStore();
 
-  // TODO: Get cart item count from cart store (will be added later)
-  const cartItemCount = 0;
+  // Get cart item count from Zustand store
+  const { itemCount: cartItemCount } = useCartStore();
 
   const handleLogout = () => {
     logout();
