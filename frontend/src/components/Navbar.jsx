@@ -133,7 +133,10 @@ export default function Navbar() {
                     {/* User Info */}
                     <div className="px-4 py-2 border-b border-gray-200">
                       <p className="font-medium text-gray-800">{user?.name}</p>
-                      <p className="text-xs text-gray-500">{user?.email}</p>
+                      {/* Only show email if it's a real one (not generated) */}
+                      {!user?.email?.includes("cartnest.local") && (
+                        <p className="text-xs text-gray-500">{user?.email}</p>
+                      )}
                       <p className="text-xs text-primary-600 font-semibold capitalize mt-1">
                         {user?.role}
                       </p>
