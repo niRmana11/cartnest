@@ -1,4 +1,6 @@
 import dotenv from "dotenv";
+import session from "express-session";
+import MongoStore from "connect-mongo";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -38,6 +40,33 @@ app.use(express.urlencoded({ extended: true }));
 
 // Cookie parser: Parse cookies from incoming requests
 app.use(cookieParser());
+
+// ===== SESSION MIDDLEWARE =====
+/**
+ * express-session with MongoDB store
+ *
+ * Sessions stored in MongoDB instead of memory:
+ * - Persistent across server restarts
+ * - Shareable across multiple server instances
+ * - Production-ready for deployment to Render
+ */
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    store: new MongoStore({
+      mongoUrl: process.env.MONGO_URI,
+      touchAfter: 24 * 3600, // Lazy session update (seconds)
+    }),
+    cookie: {
+      secure: process.env.NODE_ENV === "production", // HTTPS only in production
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: "lax", // Allow OAuth redirect
+    },
+  }),
+);
 
 // Initialize Passport.js
 app.use(passport.initialize());
