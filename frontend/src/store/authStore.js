@@ -84,9 +84,8 @@ export const useAuthStore = create((set) => ({
   checkAuth: async (api) => {
     set({ isLoading: true });
     try {
-      // Call backend /api/auth/me endpoint
-      // If successful: user is authenticated
-      // If failed: user is not authenticated
+      // api is axiosInstance passed from App.jsx
+      // It already has /api in baseURL
       const response = await api.get("/auth/me");
       set({
         user: response.data.user,

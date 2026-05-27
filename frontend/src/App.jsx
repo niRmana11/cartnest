@@ -14,31 +14,33 @@ import { useAuthStore } from "./store/authStore";
 import { useCartStore } from "./store/cartStore";
 import axiosInstance from "./api/axiosInstance";
 
+/**
+ * App Component - Main routing
+ */
+
 function App() {
   const { checkAuth } = useAuthStore();
   const { fetchCart, localClearCart } = useCartStore();
   const { isAuthenticated } = useAuthStore();
 
-  // Initialize Auth and Cart on App load
+  // ===== Initialize Auth & Cart on App Load =====
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // check if user is still authenticated (verify JWT)
         await checkAuth(axiosInstance);
       } catch (error) {
-        console.log("Failed to initialize app:", error);
+        console.error("Failed to initialize app:", error);
       }
     };
 
     initializeApp();
   }, [checkAuth]);
 
-  // Fetch cart when user logs in
+  // ===== Fetch Cart When User Logs In =====
   useEffect(() => {
     if (isAuthenticated) {
       fetchCart();
     } else {
-      // clear cart locally when user logs out
       localClearCart();
     }
   }, [isAuthenticated, fetchCart, localClearCart]);
@@ -49,21 +51,17 @@ function App() {
       <Toaster position="top-right" />
 
       <Routes>
-        {/* PUBLIC ROUTES */}
-        {/* Login page (no Layout needed) */}
+        {/* ===== PUBLIC ROUTES ===== */}
+
+        {/* Login page (no Layout) */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* All other pages  with Layout (Navbar + Footer) */}
-        <Route
-          element={
-            <Layout>
-              <Outlet />
-            </Layout>
-          }
-        >
-          {/* Public pages */}
+        {/* ===== ALL ROUTES WITH LAYOUT ===== */}
+        <Route element={<Layout />}>
+          {/* Public page */}
           <Route path="/" element={<HomePage />} />
-          {/* PROTECTED ROUTES */}
+
+          {/* ===== PROTECTED ROUTES ===== */}
           <Route element={<ProtectedRoute />}>
             <Route path="/shop" element={<ShopPage />} />
             <Route path="/cart" element={<CartPage />} />
@@ -71,7 +69,7 @@ function App() {
           </Route>
         </Route>
 
-        {/* 404 PAGE */}
+        {/* ===== 404 PAGE ===== */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>

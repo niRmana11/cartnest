@@ -94,7 +94,7 @@ router.get(
 
       // Redirect to frontend home page
       // Frontend can then make API calls with the cookie
-      res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/home`);
+      res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/`);
     } catch (error) {
       console.error("Google callback error:", error);
       res.redirect(
@@ -147,7 +147,7 @@ router.get(
       setJWTCookie(res, token);
 
       // Redirect to frontend home page (user is now logged in)
-      res.redirect(`${process.env.CLIENT_URL}/?authenticated=true`);
+      res.redirect(`${process.env.CLIENT_URL}/`);
     } catch (error) {
       console.error("Facebook callback error:", error);
       res.redirect(
