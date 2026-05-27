@@ -1,5 +1,6 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as FacebookStrategy } from "passport-facebook";
 import User from "../models/User.js";
 import dotenv from "dotenv";
 
@@ -81,6 +82,76 @@ passport.use(
       } catch (error) {
         console.log("Google OAuth verification error:", error);
         return done(error, null);
+      }
+    },
+  ),
+);
+
+// ===== FACEBOOK OAUTH STRATEGY =====
+passport.use(
+  new FacebookStrategy(
+    {
+      clientID: process.env.FACEBOOK_APP_ID,
+      clientSecret: process.env.FACEBOOK_APP_SECRET,
+      callbackURL: process.env.FACEBOOK_CALLBACK_URL,
+      profileFields: ["id", "displayName", "email", "picture"],
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        const email = profile.emails?.[0]?.value;
+
+        // ===== STEP 1: Check by Facebook providerId =====
+        // Check if this exact Facebook account is already linked
+        let user = await User.findOne({
+          providerId: profile.id,
+          provider: "facebook",
+        });
+
+        if (user) {
+          // Facebook account already linked to this user
+          console.log(`Existing Facebook user found: ${user.email}`);
+          return done(null, user);
+        }
+
+        // ===== STEP 2: Check by email (cross-provider login) =====
+        // If email available, check if user exists with any provider
+        if (email) {
+          user = await User.findOne({ email });
+
+          if (user) {
+            // User exists with different provider (Google, Passkey, etc.)
+            // Link Facebook to existing account
+            console.log(
+              `Cross-provider login: Linking Facebook to existing user ${email}`,
+            );
+
+            // Add Facebook as additional provider option
+            // (User can now login via Google OR Facebook)
+            // We don't change the primary provider, just store Facebook ID
+            user.providerId = profile.id; // Store Facebook ID
+            user.provider = "facebook"; // You can update this or keep previous
+
+            await user.save();
+            return done(null, user);
+          }
+        }
+
+        // ===== STEP 3: Create new user =====
+        // No existing user found, create new account
+        user = new User({
+          name: profile.displayName,
+          email: email || `facebook-${profile.id}@cartnest.local`,
+          provider: "facebook",
+          providerId: profile.id,
+          role: "user",
+        });
+
+        await user.save();
+        console.log(`New user created via Facebook: ${user.email}`);
+        return done(null, user);
+      } catch (error) {
+        console.error("Facebook authentication error:", error.message);
+        return done(error);
       }
     },
   ),
