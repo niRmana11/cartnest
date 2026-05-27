@@ -36,16 +36,17 @@ const origin = process.env.ORIGIN || "http://localhost:5173";
 export const generatePasskeyRegistrationOptions = async (userEmail) => {
   try {
     const options = await generateRegistrationOptions({
-      rpID, // Relying Party ID (domain name)
-      rpName, // Relying Party name (user-friendly name)
-      userName: userEmail, // User identifier (email)
-      userDisplayName: userEmail, // User-friendly name
-      attestationType: "none", // We don't need strong attestation for consumer app
+      rpID,
+      rpName,
+      userName: userEmail,
+      userDisplayName: userEmail,
+      attestationType: "none",
       authenticatorSelection: {
-        authenticatorAttachment: "platform", // Allow platform authenticators (fingerprint, face, PIN)
-        residentKey: "preferred", // Resident key (passkey stored on device)
+        authenticatorAttachment: "platform",
+        residentKey: "preferred",
+        userVerification: "discouraged", // ✅ Add this to match frontend
       },
-      timeout: 60000, // 60 seconds
+      timeout: 60000,
     });
 
     return options;
@@ -108,13 +109,13 @@ export const verifyPasskeyRegistration = async (response, challenge) => {
 export const generatePasskeyLoginOptions = async (allowedCredentialIDs) => {
   try {
     const options = await generateAuthenticationOptions({
-      rpID,
-      userVerification: "preferred", // Ask for biometric if available
-      timeout: 60000, // 60 seconds
+      rpID: rpID,
+      userVerification: "discouraged", // ✅ Match frontend
+      timeout: 60000,
       allowCredentials: allowedCredentialIDs.map((id) => ({
-        id: Buffer.from(id, "base64"),
+        id: id, // Already a buffer from backend
         type: "public-key",
-        transports: ["internal"], // Touch ID, Face ID, etc.
+        transports: ["internal"],
       })),
     });
 

@@ -27,13 +27,13 @@ export default function LoginPage() {
   const { isAuthenticated, checkAuth } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const axiosInstance =
-    // ===== REDIRECT IF ALREADY LOGGED IN =====
-    useEffect(() => {
-      if (isAuthenticated) {
-        navigate("/", { replace: true });
-      }
-    }, [isAuthenticated, navigate]);
+
+  // ===== REDIRECT IF ALREADY LOGGED IN =====
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   // ===== CHECK FOR AUTH ERRORS =====
   useEffect(() => {
@@ -69,13 +69,13 @@ export default function LoginPage() {
       setIsLoading(true);
       setError(null);
 
-      // Step 1: Get passkey login options from backend
       const email = prompt("Enter your email for passkey login:");
       if (!email) {
         setIsLoading(false);
         return;
       }
 
+      // Step 1: Get passkey login options
       const optionsResponse = await axiosInstance.post(
         "/auth/passkey/login/options",
         { email },
@@ -83,12 +83,33 @@ export default function LoginPage() {
 
       const options = optionsResponse.data.options;
 
-      // Step 2: Use browser WebAuthn API to authenticate
+      // Helper: Convert base64url to Uint8Array (handles both base64 and base64url)
+      const decodeBase64 = (str) => {
+        try {
+          // Handle base64url format (replace - with + and _ with /)
+          const base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+          const binaryString = atob(base64);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          return bytes;
+        } catch (e) {
+          console.error("Failed to decode base64:", e);
+          throw new Error("Failed to decode challenge");
+        }
+      };
+
+      // Step 2: Use browser WebAuthn to authenticate
       const assertion = await navigator.credentials.get({
         publicKey: {
-          challenge: new Uint8Array(Buffer.from(options.challenge, "base64")),
+          challenge: decodeBase64(options.challenge),
+          allowCredentials: options.allowCredentials?.map((credential) => ({
+            ...credential,
+            id: decodeBase64(credential.id),
+          })),
           timeout: options.timeout || 60000,
-          userVerification: options.userVerification || "preferred",
+          userVerification: "discouraged",
           rpId: options.rpId,
         },
       });
@@ -99,29 +120,46 @@ export default function LoginPage() {
         return;
       }
 
-      // Step 3: Send assertion to backend for verification
+      // Helper: Convert Uint8Array to base64url
+      const uint8ArrayToBase64url = (array) => {
+        let binary = "";
+        for (let i = 0; i < array.byteLength; i++) {
+          binary += String.fromCharCode(array[i]);
+        }
+        return btoa(binary)
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=/g, "");
+      };
+
+      // Step 3: Send to backend for verification
+      const payloadData = {
+        id: assertion.id,
+        rawId: uint8ArrayToBase64url(new Uint8Array(assertion.rawId)),
+        response: {
+          clientDataJSON: uint8ArrayToBase64url(
+            new Uint8Array(assertion.response.clientDataJSON),
+          ),
+          authenticatorData: uint8ArrayToBase64url(
+            new Uint8Array(assertion.response.authenticatorData),
+          ),
+          signature: uint8ArrayToBase64url(
+            new Uint8Array(assertion.response.signature),
+          ),
+        },
+        type: assertion.type,
+      };
+
+      console.log("Sending passkey login payload:", payloadData);
+
       const verifyResponse = await axiosInstance.post(
         "/auth/passkey/login/verify",
-        {
-          id: assertion.id,
-          rawId: Array.from(new Uint8Array(assertion.rawId)),
-          response: {
-            clientDataJSON: Array.from(
-              new Uint8Array(assertion.response.clientDataJSON),
-            ),
-            authenticatorData: Array.from(
-              new Uint8Array(assertion.response.authenticatorData),
-            ),
-            signature: Array.from(new Uint8Array(assertion.response.signature)),
-          },
-          type: assertion.type,
-        },
+        payloadData,
       );
 
       if (verifyResponse.data.success) {
         toast.success("Logged in with passkey!");
 
-        // Verify auth and redirect
         await checkAuth(axiosInstance);
         navigate("/", { replace: true });
       }
@@ -131,6 +169,142 @@ export default function LoginPage() {
         err.response?.data?.message ||
         err.message ||
         "Passkey login failed. Please try again.";
+      setError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ===== HANDLE PASSKEY REGISTRATION =====
+  const handlePasskeyRegistration = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Step 1: Get user email
+      const email = prompt("Enter your email for passkey registration:");
+      if (!email) {
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if valid email
+      if (!email.includes("@")) {
+        setError("Please enter a valid email address");
+        setIsLoading(false);
+        return;
+      }
+
+      // Step 2: Get registration options from backend
+      const optionsResponse = await axiosInstance.post(
+        "/auth/passkey/register/options",
+        { email },
+      );
+
+      const options = optionsResponse.data.options;
+
+      // Helper: Convert base64url to Uint8Array (handles both base64 and base64url)
+      const decodeBase64 = (str) => {
+        try {
+          // Handle base64url format (replace - with + and _ with /)
+          const base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+          const binaryString = atob(base64);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          return bytes;
+        } catch (e) {
+          console.error("Failed to decode base64:", e);
+          throw new Error("Failed to decode challenge");
+        }
+      };
+
+      // Helper: Convert string to Uint8Array
+      const stringToUint8Array = (str) => {
+        return new Uint8Array(str.split("").map((c) => c.charCodeAt(0)));
+      };
+
+      // Step 3: Create credential using browser WebAuthn API
+      const credential = await navigator.credentials.create({
+        publicKey: {
+          challenge: decodeBase64(options.challenge),
+          rp: {
+            name: "CartNest",
+            id: options.rp?.id || "localhost",
+          },
+          user: {
+            id: stringToUint8Array(email),
+            name: email,
+            displayName: email,
+          },
+          pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+          timeout: 60000,
+          attestation: "none",
+          userVerification: "discouraged",
+        },
+      });
+
+      if (!credential) {
+        setError("Passkey registration cancelled");
+        setIsLoading(false);
+        return;
+      }
+
+      // Helper: Convert Uint8Array to base64url
+      const uint8ArrayToBase64url = (array) => {
+        let binary = "";
+        for (let i = 0; i < array.byteLength; i++) {
+          binary += String.fromCharCode(array[i]);
+        }
+        return btoa(binary)
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=/g, "");
+      };
+
+      // Step 4: Send credential to backend for verification
+      const payloadData = {
+        email,
+        id: uint8ArrayToBase64url(new Uint8Array(credential.rawId)), // Ensure base64url format
+        rawId: uint8ArrayToBase64url(new Uint8Array(credential.rawId)),
+        response: {
+          clientDataJSON: uint8ArrayToBase64url(
+            new Uint8Array(credential.response.clientDataJSON),
+          ),
+          attestationObject: uint8ArrayToBase64url(
+            new Uint8Array(credential.response.attestationObject),
+          ),
+        },
+        type: credential.type,
+      };
+
+      console.log("Sending passkey registration payload:", payloadData);
+      console.log("credential.id type:", typeof credential.id);
+      console.log("credential.id value:", credential.id);
+      console.log("credential.rawId type:", credential.rawId.constructor.name);
+
+      const verifyResponse = await axiosInstance.post(
+        "/auth/passkey/register/verify",
+        payloadData,
+      );
+
+      if (verifyResponse.data.success) {
+        toast.success(
+          "Passkey registered successfully! You can now login with it.",
+        );
+
+        // Auto-login user
+        await checkAuth(axiosInstance);
+        navigate("/", { replace: true });
+      }
+    } catch (err) {
+      console.error("Passkey registration error:", err);
+      const errorMsg =
+        err.response?.data?.message ||
+        err.message ||
+        "Passkey registration failed. Please try again.";
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -274,8 +448,19 @@ export default function LoginPage() {
             <p className="text-xs text-gray-600 mb-4">
               Passkeys are more secure than passwords.
             </p>
-            <button className="w-full py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-              Register a Passkey
+            <button
+              onClick={handlePasskeyRegistration}
+              disabled={isLoading}
+              className="w-full py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <>
+                  <Loader className="w-4 h-4 animate-spin inline mr-2" />
+                  Registering...
+                </>
+              ) : (
+                "Register a Passkey"
+              )}
             </button>
           </div>
         </div>

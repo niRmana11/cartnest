@@ -41,14 +41,13 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
     // Array of registered WebAuthn passkeys
-    // Structure: { credentialId, publicKey, counter }
-    // credentialId: unique ID from browser, used for verification
-    // publicKey: stored public key for signature verification
-    // counter: prevents replay attacks (incremented on each login)
+    // credentialId: base64url string (unique ID from browser)
+    // publicKey: base64url string (public key for verification)
+    // counter: prevents replay attacks
     passkeys: [
       {
-        credentialId: String,
-        publicKey: Buffer, // binary data
+        credentialId: String, // base64url
+        publicKey: String, // base64url
         counter: {
           type: Number,
           default: 0,
