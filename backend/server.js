@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import session from "express-session";
+import MongoStore from "connect-mongo";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -42,28 +43,24 @@ app.use(cookieParser());
 
 // ===== SESSION MIDDLEWARE =====
 /**
- * express-session configuration
+ * express-session with MongoDB store
  *
- * Required for Passport OAuth flows (Google, Facebook)
- * Stores user session data during OAuth redirect
- *
- * Process:
- * 1. User clicks "Login with Facebook"
- * 2. Redirects to Facebook consent page
- * 3. Session stores user data temporarily
- * 4. Facebook redirects back to callback
- * 5. Passport retrieves user from session
- * 6. Sets JWT cookie
+ * Sessions stored in MongoDB instead of memory:
+ * - Persistent across server restarts
+ * - Shareable across multiple server instances
+ * - Production-ready for deployment to Render
  */
 app.use(
   session({
-    secret:
-      process.env.SESSION_SECRET ||
-      "your-session-secret-key-change-in-production",
+    secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
+    store: new MongoStore({
+      mongoUrl: process.env.MONGO_URI,
+      touchAfter: 24 * 3600, // Lazy session update (seconds)
+    }),
     cookie: {
-      secure: process.env.NODE_ENV === "production", // Only send over HTTPS in production
+      secure: process.env.NODE_ENV === "production", // HTTPS only in production
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       sameSite: "lax", // Allow OAuth redirect
