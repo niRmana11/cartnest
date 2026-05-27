@@ -104,6 +104,59 @@ router.get(
   },
 );
 
+// ===== FACEBOOK OAUTH ROUTES =====
+
+/**
+ * GET /api/auth/facebook
+ *
+ * Initiates Facebook OAuth flow
+ * Redirects to Facebook login consent screen
+ *
+ * Scope explains what data we're asking for:
+ * - email: User's email address
+ * - public_profile: Name, picture
+ */
+router.get(
+  "/facebook",
+  passport.authenticate("facebook", {
+    scope: ["email"],
+  }),
+);
+
+/**
+ * GET /api/auth/facebook/callback
+ *
+ * Facebook redirects back here after user logs in
+ * Passport validates the response
+ * We generate JWT and set cookie
+ */
+router.get(
+  "/facebook/callback",
+  passport.authenticate("facebook", {
+    failureRedirect: `${process.env.CLIENT_URL}/login?error=auth_failed`,
+  }),
+  (req, res) => {
+    try {
+      // User authenticated by Passport
+      const user = req.user;
+
+      // Generate JWT token
+      const token = generateJWT(user._id);
+
+      // Set JWT in HTTP-only cookie
+      setJWTCookie(res, token);
+
+      // Redirect to frontend home page (user is now logged in)
+      res.redirect(`${process.env.CLIENT_URL}/?authenticated=true`);
+    } catch (error) {
+      console.error("Facebook callback error:", error);
+      res.redirect(
+        `${process.env.CLIENT_URL}/login?error=token_generation_failed`,
+      );
+    }
+  },
+);
+
 // ===== PROTECTED ROUTES =====
 
 /**

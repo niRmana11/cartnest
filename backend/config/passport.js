@@ -1,5 +1,6 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as FacebookStrategy } from "passport-facebook";
 import User from "../models/User.js";
 import dotenv from "dotenv";
 
@@ -81,6 +82,52 @@ passport.use(
       } catch (error) {
         console.log("Google OAuth verification error:", error);
         return done(error, null);
+      }
+    },
+  ),
+);
+
+// ===== FACEBOOK OAUTH STRATEGY =====
+passport.use(
+  new FacebookStrategy(
+    {
+      clientID: process.env.FACEBOOK_APP_ID,
+      clientSecret: process.env.FACEBOOK_APP_SECRET,
+      callbackURL: process.env.FACEBOOK_CALLBACK_URL,
+      profileFields: ["id", "displayName", "email", "picture"],
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        // ===== STEP 1: Check if user exists by Facebook providerId =====
+        // This is the UNIQUE identifier for this user from Facebook
+        let user = await User.findOne({
+          providerId: profile.id,
+          provider: "facebook",
+        });
+
+        if (user) {
+          // User exists, return them
+          return done(null, user);
+        }
+
+        // ===== STEP 2: If not found by providerId, create new user =====
+        const email =
+          profile.emails?.[0]?.value || `facebook-${profile.id}@cartnest.local`;
+
+        // Create new user
+        user = new User({
+          name: profile.displayName,
+          email: email,
+          provider: "facebook",
+          providerId: profile.id, // ← IMPORTANT: Store Facebook user ID
+          role: "user",
+        });
+
+        await user.save();
+        return done(null, user);
+      } catch (error) {
+        console.error("Facebook authentication error:", error.message);
+        return done(error);
       }
     },
   ),
