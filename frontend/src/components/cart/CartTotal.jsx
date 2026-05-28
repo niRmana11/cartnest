@@ -5,6 +5,7 @@ export default function CartTotal({
   total,
   itemCount,
   onClearCart,
+  onCheckout,
   isUpdating,
 }) {
   return (
@@ -41,10 +42,11 @@ export default function CartTotal({
 
       <button
         type="button"
-        disabled
-        className="w-full mt-6 btn-primary opacity-60 cursor-not-allowed"
+        onClick={onCheckout}
+        disabled={itemCount === 0}
+        className="w-full mt-6 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Checkout Coming Soon
+        Checkout
       </button>
 
       <Link
