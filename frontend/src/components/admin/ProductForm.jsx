@@ -1,5 +1,5 @@
-import { Loader, Save, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ImagePlus, Loader, Save, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 const initialForm = {
   name: "",
@@ -19,6 +19,14 @@ export default function ProductForm({
 }) {
   const [form, setForm] = useState(initialForm);
 
+  const previewUrl = useMemo(() => {
+    if (form.image) {
+      return URL.createObjectURL(form.image);
+    }
+
+    return editingProduct?.image?.url || null;
+  }, [form.image, editingProduct]);
+
   useEffect(() => {
     if (editingProduct) {
       setForm({
@@ -34,12 +42,27 @@ export default function ProductForm({
     }
   }, [editingProduct]);
 
+  useEffect(() => {
+    return () => {
+      if (form.image && previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [form.image, previewUrl]);
+
   const handleChange = (event) => {
     const { name, value, files } = event.target;
 
     setForm((current) => ({
       ...current,
       [name]: files ? files[0] : value,
+    }));
+  };
+
+  const handleRemoveImage = () => {
+    setForm((current) => ({
+      ...current,
+      image: null,
     }));
   };
 
@@ -61,9 +84,10 @@ export default function ProductForm({
           <button
             type="button"
             onClick={onCancel}
-            className="w-9 h-9 rounded-lg hover:bg-gray-100 flex items-center justify-center"
+            className="btn-secondary btn-sm inline-flex items-center justify-center gap-2"
           >
             <X className="w-5 h-5" />
+            Cancel Edit
           </button>
         )}
       </div>
@@ -83,7 +107,7 @@ export default function ProductForm({
         onChange={handleChange}
         placeholder="Description"
         rows="3"
-        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:border-primary-400"
+        className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:border-primary-400"
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -115,7 +139,7 @@ export default function ProductForm({
         value={form.category}
         onChange={handleChange}
         required
-        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:border-primary-400"
+        className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:border-primary-400"
       >
         <option value="">Select category</option>
         {categories.map((category) => (
@@ -125,13 +149,63 @@ export default function ProductForm({
         ))}
       </select>
 
-      <input
-        name="image"
-        onChange={handleChange}
-        type="file"
-        accept="image/*"
-        className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white"
-      />
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
+          Product Image
+        </label>
+
+        <label className="block cursor-pointer rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 hover:border-primary-300 hover:bg-primary-50 transition-colors overflow-hidden">
+          {previewUrl ? (
+            <div className="relative">
+              <img
+                src={previewUrl}
+                alt="Product preview"
+                className="w-full h-48 object-cover"
+              />
+
+              <div className="absolute inset-x-0 bottom-0 bg-black/55 text-white px-4 py-3">
+                <p className="text-sm font-semibold">
+                  {form.image ? form.image.name : "Current product image"}
+                </p>
+                <p className="text-xs text-gray-200">
+                  Click to choose a different image
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="px-4 py-8 text-center">
+              <div className="w-12 h-12 rounded-lg bg-white border border-primary-100 flex items-center justify-center mx-auto mb-3">
+                <ImagePlus className="w-6 h-6 text-primary-600" />
+              </div>
+
+              <p className="font-semibold text-gray-900">
+                Click to upload product image
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                PNG, JPG, WebP, or GIF up to 5MB
+              </p>
+            </div>
+          )}
+
+          <input
+            name="image"
+            onChange={handleChange}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+          />
+        </label>
+
+        {form.image && (
+          <button
+            type="button"
+            onClick={handleRemoveImage}
+            className="mt-2 text-sm font-medium text-red-600 hover:text-red-700"
+          >
+            Remove selected image
+          </button>
+        )}
+      </div>
 
       <button
         type="submit"

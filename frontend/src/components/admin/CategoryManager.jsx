@@ -147,15 +147,6 @@ export default function CategoryManager({
             {editingCategory ? "Update Category" : "Create Category"}
           </button>
         </div>
-
-        {/* Row 3 */}
-        <div>
-          <h3 className="text-lg font-bold text-gray-900 mb-4">
-            Existing Categories
-          </h3>
-
-          {/* Your categories list/grid goes here */}
-        </div>
       </form>
 
       <div>
