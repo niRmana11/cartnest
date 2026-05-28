@@ -13,7 +13,7 @@ import { create } from "zustand";
 export const useAuthStore = create((set) => ({
   // state
   user: null,
-  isLoading: false,
+  isLoading: true,
   error: null,
 
   // Computed state(helpers)
@@ -89,7 +89,7 @@ export const useAuthStore = create((set) => ({
       const response = await api.get("/auth/me");
       set({
         user: response.data.user,
-        isAuthenticated: response.data.isAuthenticated,
+        isAuthenticated: true,
         isLoading: false,
         error: null,
       });
