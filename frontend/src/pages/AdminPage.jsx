@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { AlertCircle, Loader, ShieldCheck } from "lucide-react";
 import {
@@ -29,6 +29,9 @@ export default function AdminPage() {
   const [error, setError] = useState(null);
 
   const [categories, setCategories] = useState([]);
+
+  const productFormRef = useRef(null);
+  const categoryManagerRef = useRef(null);
 
   const loadCategories = async () => {
     const categoryList = await getCategories();
@@ -175,6 +178,34 @@ export default function AdminPage() {
     );
   }
 
+  const scrollToProductForm = () => {
+    productFormRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
+  const scrollToCategoryManager = () => {
+    categoryManagerRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
+  const handleEditProduct = (product) => {
+    setEditingProduct(product);
+
+    setTimeout(() => {
+      scrollToProductForm();
+    }, 100);
+  };
+
+  const handleEditCategory = () => {
+    setTimeout(() => {
+      scrollToCategoryManager();
+    }, 100);
+  };
+
   return (
     <div className="py-6 space-y-8">
       <section className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
@@ -207,7 +238,7 @@ export default function AdminPage() {
       <AdminStats products={products} categories={categories} />
 
       <section className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
-        <div className="h-full">
+        <div ref={productFormRef} className="h-full scroll-mt-24">
           <ProductForm
             categories={categories}
             editingProduct={editingProduct}
@@ -217,12 +248,13 @@ export default function AdminPage() {
           />
         </div>
 
-        <div className="h-full">
+        <div ref={categoryManagerRef} className="h-full scroll-mt-24">
           <CategoryManager
             categories={categories}
             onCreate={handleCreateCategory}
             onUpdate={handleUpdateCategory}
             onDelete={handleDeleteCategory}
+            onEditStart={handleEditCategory}
             isSaving={isSaving}
           />
         </div>
@@ -230,7 +262,7 @@ export default function AdminPage() {
 
       <ProductTable
         products={products}
-        onEdit={setEditingProduct}
+        onEdit={handleEditProduct}
         onDelete={handleDelete}
         isBusy={isSaving}
       />

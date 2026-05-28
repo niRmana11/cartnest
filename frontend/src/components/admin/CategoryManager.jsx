@@ -15,6 +15,7 @@ export default function CategoryManager({
   onCreate,
   onUpdate,
   onDelete,
+  onEditStart,
   isSaving,
 }) {
   const [form, setForm] = useState(initialForm);
@@ -178,7 +179,10 @@ export default function CategoryManager({
                 <div className="flex gap-2 shrink-0">
                   <button
                     type="button"
-                    onClick={() => setEditingCategory(category)}
+                    onClick={() => {
+                      setEditingCategory(category);
+                      onEditStart?.();
+                    }}
                     disabled={isSaving}
                     className="w-9 h-9 rounded-lg hover:bg-white flex items-center justify-center disabled:opacity-50"
                     title="Edit category"
