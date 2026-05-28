@@ -10,6 +10,7 @@ import passport from "./config/passport.js";
 import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
 import {
   generalLimiter,
   cartLimiter,
@@ -86,6 +87,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 // mount cart routes
 app.use("/api/cart", cartRoutes);
+// mount category routes
+app.use("/api/categories", categoryRoutes);
 
 /**
  * Health check endpoint

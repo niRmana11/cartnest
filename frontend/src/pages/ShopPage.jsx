@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { AlertCircle, RefreshCw, ShoppingBag } from "lucide-react";
 import { getProducts } from "../api/productApi";
@@ -6,16 +7,21 @@ import CategoryFilter from "../components/products/CategoryFilter";
 import ProductGrid from "../components/products/ProductGrid";
 import { useCartStore } from "../store/cartStore";
 import { useAuthStore } from "../store/authStore";
+import { getCategories } from "../api/categoryApi";
 
 export default function ShopPage() {
-  const [selectedCategory, setSelectedCategory] = useState("all");
   const [products, setProducts] = useState([]);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [addingProductId, setAddingProductId] = useState(null);
-
+  const [categories, setCategories] = useState([]);
   const { addToCart } = useCartStore();
   const { isAuthenticated } = useAuthStore();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categoryFromUrl = searchParams.get("category") || "all";
+
+  const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl);
 
   const loadProducts = async (categorySlug = selectedCategory) => {
     try {
@@ -38,12 +44,36 @@ export default function ShopPage() {
     }
   };
 
+  const loadCategories = async () => {
+    try {
+      const categoryList = await getCategories();
+      setCategories(categoryList);
+    } catch (err) {
+      console.error("Failed to load categories:", err);
+      toast.error("Failed to load categories");
+    }
+  };
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  useEffect(() => {
+    setSelectedCategory(categoryFromUrl);
+  }, [categoryFromUrl]);
+
   useEffect(() => {
     loadProducts(selectedCategory);
   }, [selectedCategory]);
 
   const handleCategoryChange = (categorySlug) => {
     setSelectedCategory(categorySlug);
+
+    if (categorySlug === "all") {
+      setSearchParams({});
+    } else {
+      setSearchParams({ category: categorySlug });
+    }
   };
 
   const handleAddToCart = async (product) => {
@@ -98,6 +128,7 @@ export default function ShopPage() {
 
       <section className="space-y-6">
         <CategoryFilter
+          categories={categories}
           selectedCategory={selectedCategory}
           onCategoryChange={handleCategoryChange}
         />

@@ -1,43 +1,27 @@
+import { useEffect, useState } from "react";
 import { useAuthStore } from "../store/authStore";
 import { Link } from "react-router-dom";
-import {
-  ArrowRight,
-  CakeSlice,
-  Cookie,
-  Broccoli,
-  ShoppingBag,
-  Apple,
-} from "lucide-react";
-
-const categories = [
-  {
-    name: "Vegetables",
-    description: "Fresh greens and farm-picked essentials.",
-    icon: Broccoli,
-    accent: "bg-primary-100 text-primary-700",
-  },
-  {
-    name: "Fruits",
-    description: "Sweet seasonal picks for every day.",
-    icon: Apple,
-    accent: "bg-red-100 text-red-700",
-  },
-  {
-    name: "Cakes",
-    description: "Soft celebration cakes and bakery favorites.",
-    icon: CakeSlice,
-    accent: "bg-purple-100 text-purple-700",
-  },
-  {
-    name: "Biscuits",
-    description: "Tea-time snacks and crunchy treats.",
-    icon: Cookie,
-    accent: "bg-amber-100 text-amber-700",
-  },
-];
+import { ArrowRight, ShoppingBag } from "lucide-react";
+import { getCategories } from "../api/categoryApi";
+import { getCategoryIcon } from "../utils/categoryIcons";
 
 export default function HomePage() {
   const { isAuthenticated } = useAuthStore();
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categoryList = await getCategories();
+        setCategories(categoryList.slice(0, 4));
+      } catch (error) {
+        console.error("Failed to load home categories:", error);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
   return (
     <div className="space-y-12 py-6">
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
@@ -52,8 +36,8 @@ export default function HomePage() {
           </h1>
 
           <p className="text-lg text-gray-600 mb-8 max-w-xl">
-            Browse vegetables, fruits, cakes, and biscuits in one clean CartNest
-            experience built for fast, responsive shopping.
+            Browse fresh products by category in one clean CartNest experience
+            built for fast, responsive shopping.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3">
@@ -109,17 +93,15 @@ export default function HomePage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {categories.map((category) => {
-            const Icon = category.icon;
+            const Icon = getCategoryIcon(category.icon);
 
             return (
               <Link
-                key={category.name}
-                to="/shop"
+                key={category._id}
+                to={`/shop?category=${category.slug}`}
                 className="card hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
               >
-                <div
-                  className={`w-11 h-11 rounded-lg flex items-center justify-center mb-4 ${category.accent}`}
-                >
+                <div className="w-11 h-11 rounded-lg flex items-center justify-center mb-4 bg-primary-100 text-primary-700">
                   <Icon className="w-5 h-5" />
                 </div>
 
@@ -127,7 +109,9 @@ export default function HomePage() {
                   {category.name}
                 </h3>
 
-                <p className="text-sm text-gray-600">{category.description}</p>
+                <p className="text-sm text-gray-600">
+                  Browse fresh {category.name.toLowerCase()} products.
+                </p>
               </Link>
             );
           })}
