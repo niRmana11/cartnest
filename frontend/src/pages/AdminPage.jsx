@@ -206,8 +206,8 @@ export default function AdminPage() {
 
       <AdminStats products={products} categories={categories} />
 
-      <section className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
-        <div className="xl:col-span-1">
+      <section className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
+        <div className="h-full">
           <ProductForm
             categories={categories}
             editingProduct={editingProduct}
@@ -215,7 +215,9 @@ export default function AdminPage() {
             onCancel={() => setEditingProduct(null)}
             isSaving={isSaving}
           />
+        </div>
 
+        <div className="h-full">
           <CategoryManager
             categories={categories}
             onCreate={handleCreateCategory}
@@ -224,16 +226,14 @@ export default function AdminPage() {
             isSaving={isSaving}
           />
         </div>
-
-        <div className="xl:col-span-2">
-          <ProductTable
-            products={products}
-            onEdit={setEditingProduct}
-            onDelete={handleDelete}
-            isBusy={isSaving}
-          />
-        </div>
       </section>
+
+      <ProductTable
+        products={products}
+        onEdit={setEditingProduct}
+        onDelete={handleDelete}
+        isBusy={isSaving}
+      />
     </div>
   );
 }

@@ -44,14 +44,14 @@ export default function CategoryManager({
   };
 
   return (
-    <div className="card">
-      <div className="flex items-center justify-between gap-4 mb-5">
+    <section className="card">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5 mb-6">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-gray-900">
             Category Management
           </h2>
-          <p className="text-sm text-gray-500">
-            Create categories and choose trusted display icons.
+          <p className="text-gray-600 mt-1">
+            Create shop categories and choose trusted display icons.
           </p>
         </div>
 
@@ -59,107 +59,163 @@ export default function CategoryManager({
           <button
             type="button"
             onClick={() => setEditingCategory(null)}
-            className="w-9 h-9 rounded-lg hover:bg-gray-100 flex items-center justify-center"
+            className="btn-secondary btn-sm inline-flex items-center justify-center gap-2"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
+            Cancel Edit
           </button>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 mb-6">
-        <input
-          value={form.name}
-          onChange={(event) =>
-            setForm((current) => ({ ...current, name: event.target.value }))
-          }
-          placeholder="Category name"
-          required
-          className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:border-primary-400"
-        />
+      <form onSubmit={handleSubmit} className="space-y-6 mb-8">
+        {/* Row 1 */}
+        <div className="flex justify-center">
+          {/* Choose Icon */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-4 w-full max-w-2xl">
+            <label className="block text-sm font-semibold text-gray-700 mb-4">
+              Choose Icon
+            </label>
 
-        <select
-          value={form.icon}
-          onChange={(event) =>
-            setForm((current) => ({ ...current, icon: event.target.value }))
-          }
-          className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:border-primary-400"
-        >
-          {CATEGORY_ICON_OPTIONS.filter((option) => option.value !== "grid").map(
-            (option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ),
-          )}
-        </select>
+            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-10 gap-2">
+              {CATEGORY_ICON_OPTIONS.filter(
+                (option) => option.value !== "grid",
+              ).map((option) => {
+                const Icon = option.icon;
+                const isSelected = form.icon === option.value;
 
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="btn-primary inline-flex items-center justify-center gap-2"
-        >
-          {isSaving ? (
-            <Loader className="w-4 h-4 animate-spin" />
-          ) : editingCategory ? (
-            <Save className="w-4 h-4" />
-          ) : (
-            <Plus className="w-4 h-4" />
-          )}
-          {editingCategory ? "Update Category" : "Create Category"}
-        </button>
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        icon: option.value,
+                      }))
+                    }
+                    title={option.label}
+                    className={`h-12 w-12 rounded-lg border flex items-center justify-center transition-all ${
+                      isSelected
+                        ? "bg-primary-500 text-white border-primary-500 shadow-md scale-105"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-primary-300 hover:text-primary-600"
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2 */}
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_auto] gap-4 items-end">
+          {/* Category Name */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Category Name
+            </label>
+
+            <input
+              value={form.name}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  name: event.target.value,
+                }))
+              }
+              placeholder="Example: Snacks"
+              required
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-primary-400"
+            />
+          </div>
+
+          {/* Button */}
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="btn-primary h-12.5 px-6 inline-flex items-center justify-center gap-2 rounded-xl"
+          >
+            {isSaving ? (
+              <Loader className="w-4 h-4 animate-spin" />
+            ) : editingCategory ? (
+              <Save className="w-4 h-4" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
+
+            {editingCategory ? "Update Category" : "Create Category"}
+          </button>
+        </div>
+
+        {/* Row 3 */}
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 mb-4">
+            Existing Categories
+          </h3>
+
+          {/* Your categories list/grid goes here */}
+        </div>
       </form>
 
-      <div className="space-y-3">
-        {categories.map((category) => {
-          const Icon = getCategoryIcon(category.icon);
+      <div>
+        <h3 className="text-lg font-bold text-gray-900 mb-4">
+          Existing Categories
+        </h3>
 
-          return (
-            <div
-              key={category._id}
-              className="flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-50"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-700 flex items-center justify-center">
-                  <Icon className="w-5 h-5" />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4">
+          {categories.map((category) => {
+            const Icon = getCategoryIcon(category.icon);
+
+            return (
+              <div
+                key={category._id}
+                className="p-4 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-11 h-11 rounded-lg bg-primary-100 text-primary-700 flex items-center justify-center shrink-0">
+                    <Icon className="w-5 h-5" />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900 truncate">
+                      {category.name}
+                    </p>
+                  </div>
                 </div>
 
-                <div>
-                  <p className="font-semibold text-gray-900">
-                    {category.name}
-                  </p>
-                  <p className="text-xs text-gray-500">{category.slug}</p>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setEditingCategory(category)}
+                    disabled={isSaving}
+                    className="w-9 h-9 rounded-lg hover:bg-white flex items-center justify-center disabled:opacity-50"
+                    title="Edit category"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onDelete(category)}
+                    disabled={isSaving}
+                    className="w-9 h-9 rounded-lg hover:bg-red-50 text-red-600 flex items-center justify-center disabled:opacity-50"
+                    title="Delete category"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
+            );
+          })}
 
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingCategory(category)}
-                  disabled={isSaving}
-                  className="w-9 h-9 rounded-lg hover:bg-gray-100 flex items-center justify-center disabled:opacity-50"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => onDelete(category)}
-                  disabled={isSaving}
-                  className="w-9 h-9 rounded-lg hover:bg-red-50 text-red-600 flex items-center justify-center disabled:opacity-50"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          );
-        })}
-
-        {categories.length === 0 && (
-          <p className="text-sm text-gray-500 text-center py-6">
-            No categories created yet.
-          </p>
-        )}
+          {categories.length === 0 && (
+            <p className="text-sm text-gray-500 py-6">
+              No categories created yet.
+            </p>
+          )}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
