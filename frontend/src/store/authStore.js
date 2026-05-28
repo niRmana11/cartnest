@@ -89,8 +89,9 @@ export const useAuthStore = create((set) => ({
       const response = await api.get("/auth/me");
       set({
         user: response.data.user,
-        isAuthenticated: true,
+        isAuthenticated: response.data.isAuthenticated,
         isLoading: false,
+        error: null,
       });
     } catch (error) {
       // JWT invalid or expired

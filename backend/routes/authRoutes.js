@@ -102,19 +102,33 @@ router.get(
 );
 
 // ===== PROTECTED ROUTES =====
-router.get("/me", verifyToken, async (req, res) => {
+router.get("/me", async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId).select("-passkeys");
+    const token = req.cookies.token;
+
+    if (!token) {
+      return res.json({
+        success: true,
+        isAuthenticated: false,
+        user: null,
+      });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.userId).select("-passkeys");
 
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "User not found",
+      return res.json({
+        success: true,
+        isAuthenticated: false,
+        user: null,
       });
     }
 
     res.json({
       success: true,
+      isAuthenticated: true,
       user: {
         id: user._id,
         name: user.name,
@@ -124,14 +138,15 @@ router.get("/me", verifyToken, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("/me endpoint error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
+    return res.json({
+      success: true,
+      isAuthenticated: false,
+      user: null,
     });
   }
 });
 
+// Logout routes
 router.post("/logout", (req, res) => {
   const isProd = process.env.NODE_ENV === "production";
   res.clearCookie("token", {

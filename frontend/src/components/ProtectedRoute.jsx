@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 
 /**
@@ -30,7 +30,5 @@ export default function ProtectedRoute() {
     return <Navigate to="/login" replace />;
   }
 
-  // If authenticated, render Outlet for child routes
-  // Outlet is rendered by React Router automatically
-  return null; // Router will render the child route
+  return <Outlet />;
 }
