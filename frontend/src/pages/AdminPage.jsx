@@ -11,6 +11,13 @@ import AdminStats from "../components/admin/AdminStats";
 import ProductForm from "../components/admin/ProductForm";
 import ProductTable from "../components/admin/ProductTable";
 import { useAuthStore } from "../store/authStore";
+import {
+  createCategory,
+  deleteCategory,
+  getCategories,
+  updateCategory,
+} from "../api/categoryApi";
+import CategoryManager from "../components/admin/CategoryManager";
 
 export default function AdminPage() {
   const { user } = useAuthStore();
@@ -21,30 +28,12 @@ export default function AdminPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  const categories = useMemo(() => {
-    const map = new Map();
+  const [categories, setCategories] = useState([]);
 
-    products.forEach((product) => {
-      if (product.category?._id) {
-        map.set(product.category._id, product.category);
-      }
-    });
-
-    return Array.from(map.values());
-  }, [products]);
-
-  const categorySummary = useMemo(() => {
-    return categories.map((category) => {
-      const count = products.filter(
-        (product) => product.category?._id === category._id,
-      ).length;
-
-      return {
-        ...category,
-        count,
-      };
-    });
-  }, [categories, products]);
+  const loadCategories = async () => {
+    const categoryList = await getCategories();
+    setCategories(categoryList);
+  };
 
   const loadProducts = async () => {
     try {
@@ -62,9 +51,70 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    loadProducts();
+    const loadDashboard = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        await Promise.all([loadProducts(), loadCategories()]);
+      } catch (err) {
+        console.error("Failed to load admin dashboard:", err);
+        setError(err.response?.data?.message || "Failed to load dashboard");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDashboard();
   }, []);
 
+  // category handlers
+  const handleCreateCategory = async (categoryData) => {
+    try {
+      setIsSaving(true);
+      await createCategory(categoryData);
+      toast.success("Category created");
+      await loadCategories();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to create category");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateCategory = async (categoryId, categoryData) => {
+    try {
+      setIsSaving(true);
+      await updateCategory(categoryId, categoryData);
+      toast.success("Category updated");
+      await Promise.all([loadCategories(), loadProducts()]);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update category");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteCategory = async (category) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${category.name}"?`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setIsSaving(true);
+      await deleteCategory(category._id);
+      toast.success("Category deleted");
+      await loadCategories();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete category");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // product handlers
   const handleSubmit = async (formData) => {
     try {
       setIsSaving(true);
@@ -166,36 +216,13 @@ export default function AdminPage() {
             isSaving={isSaving}
           />
 
-          <div className="card mt-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              Category Summary
-            </h2>
-
-            <div className="space-y-3">
-              {categorySummary.map((category) => (
-                <div
-                  key={category._id}
-                  className="flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-50"
-                >
-                  <div>
-                    <p className="font-semibold text-gray-900">
-                      {category.name}
-                    </p>
-                    <p className="text-xs text-gray-500">{category.slug}</p>
-                  </div>
-
-                  <span className="text-sm font-bold text-primary-600">
-                    {category.count}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <p className="text-xs text-gray-500 mt-4">
-              Full category CRUD needs backend category routes. This summary
-              uses categories returned with products.
-            </p>
-          </div>
+          <CategoryManager
+            categories={categories}
+            onCreate={handleCreateCategory}
+            onUpdate={handleUpdateCategory}
+            onDelete={handleDeleteCategory}
+            isSaving={isSaving}
+          />
         </div>
 
         <div className="xl:col-span-2">
