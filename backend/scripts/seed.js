@@ -38,7 +38,7 @@ const SAMPLE_PRODUCTS = [
     categorySlug: "vegetables",
     stock: 50,
     imageUrl:
-      "https://images.unsplash.com/photo-1506806732259-39c2d0268443?auto=format&fit=crop&w=400&q=80", // Carrot image placeholder
+      "https://images.unsplash.com/photo-1633380110125-f6e685676160?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=400&q=80", // Carrot image placeholder
   },
   {
     name: "Spinach Bunch",

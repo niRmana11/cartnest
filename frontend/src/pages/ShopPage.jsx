@@ -1,27 +1,139 @@
-/**
- * ShopPage Component
- *
- * Placeholder - will be implemented in Day 4
- * Shows products by category with filtering
- */
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { AlertCircle, RefreshCw, ShoppingBag } from "lucide-react";
+import { getProducts } from "../api/productApi";
+import CategoryFilter from "../components/products/CategoryFilter";
+import ProductGrid from "../components/products/ProductGrid";
+import { useCartStore } from "../store/cartStore";
+import { useAuthStore } from "../store/authStore";
 
 export default function ShopPage() {
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [products, setProducts] = useState([]);
+  const [isProductsLoading, setIsProductsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [addingProductId, setAddingProductId] = useState(null);
+
+  const { addToCart } = useCartStore();
+  const { isAuthenticated } = useAuthStore();
+
+  const loadProducts = async (categorySlug = selectedCategory) => {
+    try {
+      setIsProductsLoading(true);
+      setError(null);
+
+      const productList = await getProducts(categorySlug);
+      setProducts(productList);
+    } catch (err) {
+      console.error("Failed to load products:", err);
+
+      const message =
+        err.response?.data?.message ||
+        "Failed to load products. Please try again.";
+
+      setError(message);
+      setProducts([]);
+    } finally {
+      setIsProductsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProducts(selectedCategory);
+  }, [selectedCategory]);
+
+  const handleCategoryChange = (categorySlug) => {
+    setSelectedCategory(categorySlug);
+  };
+
+  const handleAddToCart = async (product) => {
+    if (!isAuthenticated) {
+      toast.error("Please login before adding items to your cart.");
+      return;
+    }
+
+    try {
+      setAddingProductId(product._id);
+
+      const result = await addToCart(product._id, 1);
+
+      if (result.success) {
+        toast.success(`${product.name} added to cart`);
+      } else {
+        toast.error(result.message || "Failed to add item to cart");
+      }
+    } catch (err) {
+      console.error("Add to cart failed:", err);
+
+      const status = err.response?.status;
+      if (status === 401) {
+        toast.error("Please login before adding items to your cart.");
+      } else {
+        toast.error("Failed to add item to cart");
+      }
+    } finally {
+      setAddingProductId(null);
+    }
+  };
+
   return (
-    <div className="py-12">
-      <h1 className="text-4xl font-bold text-gray-900 mb-4">Shop 🛍️</h1>
-      <p className="text-lg text-gray-600 mb-8">
-        Browse our products by category
-      </p>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div
-            key={i}
-            className="card h-80 bg-gray-200 animate-pulse flex items-center justify-center"
-          >
-            <p className="text-gray-500">Product Placeholder {i}</p>
+    <div className="space-y-8 py-4">
+      <section className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-50 text-primary-700 text-sm font-semibold mb-4 border border-primary-100">
+            <ShoppingBag className="w-4 h-4" />
+            CartNest Shop
           </div>
-        ))}
-      </div>
+
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">
+            Browse fresh products
+          </h1>
+
+          <p className="text-lg text-gray-600 max-w-2xl">
+            Filter by category, choose your favorites, and add products to your
+            cart in one click.
+          </p>
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <CategoryFilter
+          selectedCategory={selectedCategory}
+          onCategoryChange={handleCategoryChange}
+        />
+
+        {error ? (
+          <div className="card border border-red-100 bg-red-50">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                <div>
+                  <h2 className="font-bold text-red-800">
+                    Could not load products
+                  </h2>
+                  <p className="text-sm text-red-700 mt-1">{error}</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => loadProducts(selectedCategory)}
+                className="btn-secondary btn-sm inline-flex items-center justify-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Retry
+              </button>
+            </div>
+          </div>
+        ) : (
+          <ProductGrid
+            products={products}
+            isLoading={isProductsLoading}
+            onAddToCart={handleAddToCart}
+            addingProductId={addingProductId}
+          />
+        )}
+      </section>
     </div>
   );
 }
