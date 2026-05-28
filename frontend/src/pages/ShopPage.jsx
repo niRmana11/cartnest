@@ -6,6 +6,7 @@ import CategoryFilter from "../components/products/CategoryFilter";
 import ProductGrid from "../components/products/ProductGrid";
 import { useCartStore } from "../store/cartStore";
 import { useAuthStore } from "../store/authStore";
+import { getCategories } from "../api/categoryApi";
 
 export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -13,7 +14,7 @@ export default function ShopPage() {
   const [isProductsLoading, setIsProductsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [addingProductId, setAddingProductId] = useState(null);
-
+  const [categories, setCategories] = useState([]);
   const { addToCart } = useCartStore();
   const { isAuthenticated } = useAuthStore();
 
@@ -37,6 +38,20 @@ export default function ShopPage() {
       setIsProductsLoading(false);
     }
   };
+
+  const loadCategories = async () => {
+    try {
+      const categoryList = await getCategories();
+      setCategories(categoryList);
+    } catch (err) {
+      console.error("Failed to load categories:", err);
+      toast.error("Failed to load categories");
+    }
+  };
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
 
   useEffect(() => {
     loadProducts(selectedCategory);
@@ -98,6 +113,7 @@ export default function ShopPage() {
 
       <section className="space-y-6">
         <CategoryFilter
+          categories={categories}
           selectedCategory={selectedCategory}
           onCategoryChange={handleCategoryChange}
         />

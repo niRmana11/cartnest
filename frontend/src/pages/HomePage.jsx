@@ -1,13 +1,9 @@
+import { useEffect, useState } from "react";
 import { useAuthStore } from "../store/authStore";
 import { Link } from "react-router-dom";
-import {
-  ArrowRight,
-  CakeSlice,
-  Cookie,
-  Broccoli,
-  ShoppingBag,
-  Apple,
-} from "lucide-react";
+import { ArrowRight, ShoppingBag } from "lucide-react";
+import { getCategories } from "../api/categoryApi";
+import { getCategoryIcon } from "../utils/categoryIcons";
 
 const categories = [
   {
@@ -38,6 +34,22 @@ const categories = [
 
 export default function HomePage() {
   const { isAuthenticated } = useAuthStore();
+
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categoryList = await getCategories();
+        setCategories(categoryList.slice(0, 4));
+      } catch (error) {
+        console.error("Failed to load home categories:", error);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
   return (
     <div className="space-y-12 py-6">
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
@@ -109,25 +121,27 @@ export default function HomePage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {categories.map((category) => {
-            const Icon = category.icon;
+            const Icon = getCategoryIcon(category.icon);
 
             return (
               <Link
-                key={category.name}
+                key={category._id}
                 to="/shop"
                 className="card hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
               >
                 <div
                   className={`w-11 h-11 rounded-lg flex items-center justify-center mb-4 ${category.accent}`}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-11 h-11 rounded-lg flex items-center justify-center mb-4 bg-primary-100 text-primary-700" />
                 </div>
 
                 <h3 className="font-bold text-gray-900 mb-2">
                   {category.name}
                 </h3>
 
-                <p className="text-sm text-gray-600">{category.description}</p>
+                <p className="text-sm text-gray-600">
+                  Browse fresh {category.name.toLowerCase()} products.
+                </p>
               </Link>
             );
           })}
