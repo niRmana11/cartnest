@@ -70,6 +70,7 @@ app.use(
 
 // Initialize Passport.js
 app.use(passport.initialize());
+app.use(passport.session());
 
 // ===== RATE LIMITING =====
 // Apply general rate limiter to all API routes

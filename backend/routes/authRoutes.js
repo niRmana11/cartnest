@@ -4,28 +4,14 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 import { challengeStore } from "../utils/challengeStore.js";
+import {
+  verifyRegistrationResponse,
+  verifyAuthenticationResponse,
+} from "@simplewebauthn/server";
 
 const router = express.Router();
 
-/**
- * Auth Routes
- *
- * This file handles:
- * - Google OAuth login flow
- * - JWT cookie generation
- * - Protected /me endpoint (get current user)
- * - Logout (clear cookie)
- *
- * Passkey routes will be added in Step 7
- */
-
 // ===== HELPER: Generate JWT Token =====
-
-/**
- * Generate JWT token
- * Payload: { userId, iat, exp }
- * Stored in: HTTP-only cookie (not localStorage)
- */
 const generateJWT = (userId) => {
   const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || "7d",
@@ -33,34 +19,35 @@ const generateJWT = (userId) => {
   return token;
 };
 
-/**
- * Set JWT in HTTP-only cookie
- *
- * HTTP-only: JavaScript cannot read it (XSS protection)
- * sameSite: 'strict' — prevents CSRF attacks
- * secure: true in production only (requires HTTPS)
- */
+// ===== HELPER: Set JWT Cookie =====
 const setJWTCookie = (res, token) => {
   const isProd = process.env.NODE_ENV === "production";
   res.cookie("token", token, {
-    httpOnly: true, // Not readable by JS (XSS protection)
-    sameSite: isProd ? "none" : "strict", // Use None for cross-site frontend/API in prod
-    secure: isProd, // HTTPS only in production
+    httpOnly: true,
+    sameSite: isProd ? "none" : "lax",
+    secure: isProd,
     path: "/",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 };
 
-// ===== GOOGLE OAUTH ROUTES =====
+// ===== HELPER: Base64URL to Buffer =====
+const base64urlToBuffer = (base64url) => {
+  const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+  return Buffer.from(padded, "base64");
+};
 
-/**
- * Route: GET /api/auth/google
- * Initiates Google OAuth flow
- *
- * User clicks "Login with Google" button on frontend
- * Frontend navigates to this URL
- * Passport redirects to Google login page
- */
+// ===== HELPER: Buffer to Base64URL =====
+const bufferToBase64url = (buffer) => {
+  return Buffer.from(buffer)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
+};
+
+// ===== GOOGLE OAUTH =====
 router.get(
   "/google",
   passport.authenticate("google", {
@@ -68,33 +55,15 @@ router.get(
   }),
 );
 
-/**
- * Route: GET /api/auth/google/callback
- * Google redirects back here after user grants permission
- *
- * Process:
- * 1. Passport verifies the auth code
- * 2. Exchanges code for user profile
- * 3. Calls GoogleStrategy verify callback
- * 4. User is found/created in MongoDB
- * 5. req.user is set
- * 6. We generate JWT and set cookie
- * 7. Redirect to frontend home
- */
 router.get(
   "/google/callback",
   passport.authenticate("google", { session: false }),
   (req, res) => {
     try {
-      // req.user is set by Passport (from serializeUser)
       const token = generateJWT(req.user._id);
       setJWTCookie(res, token);
-
-      console.log(`User logged in: ${req.user.email}`);
-
-      // Redirect to frontend home page
-      // Frontend can then make API calls with the cookie
-      res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/home`);
+      console.log(`✅ User logged in via Google: ${req.user.email}`);
+      res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/`);
     } catch (error) {
       console.error("Google callback error:", error);
       res.redirect(
@@ -104,18 +73,7 @@ router.get(
   },
 );
 
-// ===== FACEBOOK OAUTH ROUTES =====
-
-/**
- * GET /api/auth/facebook
- *
- * Initiates Facebook OAuth flow
- * Redirects to Facebook login consent screen
- *
- * Scope explains what data we're asking for:
- * - email: User's email address
- * - public_profile: Name, picture
- */
+// ===== FACEBOOK OAUTH =====
 router.get(
   "/facebook",
   passport.authenticate("facebook", {
@@ -123,13 +81,6 @@ router.get(
   }),
 );
 
-/**
- * GET /api/auth/facebook/callback
- *
- * Facebook redirects back here after user logs in
- * Passport validates the response
- * We generate JWT and set cookie
- */
 router.get(
   "/facebook/callback",
   passport.authenticate("facebook", {
@@ -137,17 +88,10 @@ router.get(
   }),
   (req, res) => {
     try {
-      // User authenticated by Passport
-      const user = req.user;
-
-      // Generate JWT token
-      const token = generateJWT(user._id);
-
-      // Set JWT in HTTP-only cookie
+      const token = generateJWT(req.user._id);
       setJWTCookie(res, token);
-
-      // Redirect to frontend home page (user is now logged in)
-      res.redirect(`${process.env.CLIENT_URL}/?authenticated=true`);
+      console.log(`✅ User logged in via Facebook: ${req.user.email}`);
+      res.redirect(`${process.env.CLIENT_URL}/`);
     } catch (error) {
       console.error("Facebook callback error:", error);
       res.redirect(
@@ -158,35 +102,33 @@ router.get(
 );
 
 // ===== PROTECTED ROUTES =====
-
-/**
- * Route: GET /api/auth/me
- * Protected endpoint — requires valid JWT cookie
- *
- * Returns current logged-in user
- * Frontend calls this on app load to check if user is logged in
- *
- * Usage:
- * - Frontend app loads → calls /api/auth/me
- * - If authenticated: returns user object
- * - If not authenticated: returns 401 Unauthorized
- */
-router.get("/me", verifyToken, async (req, res) => {
+router.get("/me", async (req, res) => {
   try {
-    // verifyToken middleware extracts userId from JWT and attaches to req.user
-    const user = await User.findById(req.user.userId).select(
-      "-passkeys", // Exclude passkeys for security
-    );
+    const token = req.cookies.token;
+
+    if (!token) {
+      return res.json({
+        success: true,
+        isAuthenticated: false,
+        user: null,
+      });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.userId).select("-passkeys");
 
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "User not found",
+      return res.json({
+        success: true,
+        isAuthenticated: false,
+        user: null,
       });
     }
 
     res.json({
       success: true,
+      isAuthenticated: true,
       user: {
         id: user._id,
         name: user.name,
@@ -196,26 +138,20 @@ router.get("/me", verifyToken, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("/me endpoint error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
+    return res.json({
+      success: true,
+      isAuthenticated: false,
+      user: null,
     });
   }
 });
 
-/**
- * Route: POST /api/auth/logout
- * Clears JWT cookie
- *
- * Frontend calls this when user clicks "Logout"
- * We clear the HTTP-only cookie (frontend cannot access it directly)
- */
+// Logout routes
 router.post("/logout", (req, res) => {
   const isProd = process.env.NODE_ENV === "production";
   res.clearCookie("token", {
     httpOnly: true,
-    sameSite: isProd ? "none" : "strict",
+    sameSite: isProd ? "none" : "lax",
     secure: isProd,
     path: "/",
   });
@@ -226,19 +162,9 @@ router.post("/logout", (req, res) => {
   });
 });
 
-// ===== PASSKEY (WebAuthn) ROUTES =====
-
+// ===== PASSKEY ROUTES =====
 import * as webauthn from "../config/webauthn.js";
 
-/**
- * Route: POST /api/auth/passkey/register/options
- * Generate registration challenge for passkey signup
- *
- * Request body: { email }
- * Response: { challenge, user, rp, ... }
- *
- * Security: Challenge is stored server-side with 5-minute TTL
- */
 router.post("/passkey/register/options", async (req, res) => {
   try {
     const { email } = req.body;
@@ -250,19 +176,15 @@ router.post("/passkey/register/options", async (req, res) => {
       });
     }
 
-    // Check if user already exists with passkey
     const existingUser = await User.findOne({ email });
-    if (existingUser && existingUser.passkeys?.length > 0) {
+    if (existingUser?.passkeys?.length > 0) {
       return res.status(400).json({
         success: false,
         message: "Passkey already registered for this email",
       });
     }
 
-    // Generate challenge
     const options = await webauthn.generatePasskeyRegistrationOptions(email);
-
-    // Store challenge server-side with TTL
     challengeStore.store(email, "registration", options.challenge);
 
     res.json({
@@ -278,96 +200,113 @@ router.post("/passkey/register/options", async (req, res) => {
   }
 });
 
-/**
- * Route: POST /api/auth/passkey/register/verify
- * Verify passkey credential and create user
- *
- * Request body: { email, response }
- *
- * Security: Challenge is retrieved from server-side store (not client-supplied)
- */
 router.post("/passkey/register/verify", async (req, res) => {
   try {
-    const { email, response } = req.body;
+    const { email, id, rawId, response, type } = req.body;
 
-    if (!email || !response) {
+    if (!email || !id || !rawId || !response || !type) {
       return res.status(400).json({
         success: false,
-        message: "Email and response are required",
+        message: "Missing required credential fields",
       });
     }
 
-    // Retrieve challenge from server-side store (not client-supplied!)
-    const storedChallenge = challengeStore.get(email, "registration");
-    if (!storedChallenge) {
+    const challenge = challengeStore.get(email, "registration");
+    if (!challenge) {
       return res.status(400).json({
         success: false,
-        message: "No valid challenge found. Please start registration again.",
+        message: "No registration challenge found. Please start fresh.",
       });
     }
 
-    // Check if user already exists
-    let user = await User.findOne({ email });
-    if (user && user.passkeys.length > 0) {
+    try {
+      // SimpleWebAuthn v8 expects browser response fields as base64url strings.
+      const verification = await verifyRegistrationResponse({
+        response: {
+          id,
+          rawId,
+          response: {
+            clientDataJSON: response.clientDataJSON,
+            attestationObject: response.attestationObject,
+          },
+          type,
+        },
+        expectedChallenge: challenge,
+        expectedOrigin: process.env.ORIGIN || "http://localhost:5173",
+        expectedRPID: process.env.RP_ID || "localhost",
+        requireUserVerification: false,
+      });
+
+      if (!verification.verified) {
+        throw new Error("Passkey verification failed");
+      }
+
+      const { credentialPublicKey, credentialID, counter } =
+        verification.registrationInfo;
+
+      // Store credentialId and publicKey as base64url strings
+      const credentialIdBase64url = bufferToBase64url(credentialID);
+      const publicKeyBase64url = bufferToBase64url(credentialPublicKey);
+
+      let user = await User.findOne({ email });
+
+      if (!user) {
+        user = new User({
+          name: email.split("@")[0],
+          email,
+          provider: "passkey",
+          providerId: id,
+          role: "user",
+          passkeys: [
+            {
+              credentialId: credentialIdBase64url,
+              publicKey: publicKeyBase64url,
+              counter: counter,
+            },
+          ],
+        });
+      } else {
+        user.passkeys.push({
+          credentialId: credentialIdBase64url,
+          publicKey: publicKeyBase64url,
+          counter: counter,
+        });
+      }
+
+      await user.save();
+      challengeStore.remove(email, "registration");
+
+      const token = generateJWT(user._id);
+      setJWTCookie(res, token);
+
+      console.log(`✅ Passkey registered for: ${email}`);
+
+      res.json({
+        success: true,
+        message: "Passkey registered successfully",
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      });
+    } catch (verifyError) {
+      console.error("SimpleWebAuthn error:", verifyError.message);
       return res.status(400).json({
         success: false,
-        message: "Passkey already registered for this email",
+        message: `Passkey verification failed: ${verifyError.message}`,
       });
     }
-
-    // Verify the passkey credential (using STORED challenge, not client-supplied)
-    const credential = await webauthn.verifyPasskeyRegistration(
-      response,
-      storedChallenge, // ← Server-side stored challenge, not from client
-    );
-
-    // Remove challenge (one-time use)
-    challengeStore.remove(email, "registration");
-
-    if (!user) {
-      // Create new user with passkey
-      user = new User({
-        name: email.split("@")[0],
-        email,
-        provider: "passkey",
-        passkeys: [credential],
-      });
-    } else {
-      // Add passkey to existing user
-      user.passkeys.push(credential);
-    }
-
-    await user.save();
-
-    console.log(`✅ Passkey registered for: ${user.email}`);
-
-    res.json({
-      success: true,
-      message: "Passkey registered successfully",
-      user: {
-        id: user._id,
-        email: user.email,
-        provider: user.provider,
-      },
-    });
   } catch (error) {
-    console.error("Passkey registration verify error:", error);
+    console.error("Passkey registration error:", error.message);
     res.status(400).json({
       success: false,
-      message: error.message,
+      message: `Failed to verify registration: ${error.message}`,
     });
   }
 });
 
-/**
- * Route: POST /api/auth/passkey/login/options
- * Generate login challenge for passkey login
- *
- * Request body: { email }
- * Response: { challenge, allowCredentials, ... }
- *
- * Security: Challenge is stored server-side with 5-minute TTL
- */
 router.post("/passkey/login/options", async (req, res) => {
   try {
     const { email } = req.body;
@@ -379,21 +318,22 @@ router.post("/passkey/login/options", async (req, res) => {
       });
     }
 
-    // Find user and check if they have passkeys
     const user = await User.findOne({ email });
-    if (!user || user.passkeys.length === 0) {
+    if (!user?.passkeys?.length) {
       return res.status(404).json({
         success: false,
         message: "No passkey found for this email",
       });
     }
 
-    // Generate login challenge
-    const allowedCredentialIDs = user.passkeys.map((pk) => pk.credentialId);
+    // Convert base64url credential IDs back to buffers for allowCredentials
+    const allowedCredentialIDs = user.passkeys.map((pk) =>
+      base64urlToBuffer(pk.credentialId),
+    );
+
     const options =
       await webauthn.generatePasskeyLoginOptions(allowedCredentialIDs);
 
-    // Store challenge server-side with TTL
     challengeStore.store(email, "login", options.challenge);
 
     res.json({
@@ -409,94 +349,106 @@ router.post("/passkey/login/options", async (req, res) => {
   }
 });
 
-/**
- * Route: POST /api/auth/passkey/login/verify
- * Verify passkey login and issue JWT
- *
- * Request body: { email, response }
- *
- * Security: Challenge is retrieved from server-side store (not client-supplied)
- */
 router.post("/passkey/login/verify", async (req, res) => {
   try {
-    const { email, response } = req.body;
+    const { id, rawId, response, type } = req.body;
 
-    if (!email || !response) {
+    if (!id || !rawId || !response || !type) {
       return res.status(400).json({
         success: false,
-        message: "Email and response are required",
+        message: "Missing required credential fields",
       });
     }
 
-    // Retrieve challenge from server-side store (not client-supplied!)
-    const storedChallenge = challengeStore.get(email, "login");
-    if (!storedChallenge) {
-      return res.status(400).json({
-        success: false,
-        message: "No valid challenge found. Please start login again.",
-      });
-    }
+    // Find user by credentialId
+    const user = await User.findOne({
+      "passkeys.credentialId": id,
+    });
 
-    // Find user
-    const user = await User.findOne({ email });
-    if (!user || user.passkeys.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Passkey not found",
-      });
-    }
-
-    // Find the matching passkey credential
-    const responseCredentialId = Buffer.from(response.id, "base64url").toString(
-      "base64",
-    );
-    const passkey = user.passkeys.find(
-      (pk) => pk.credentialId === responseCredentialId,
-    );
-    if (!passkey) {
-      return res.status(404).json({
+    if (!user) {
+      return res.status(401).json({
         success: false,
         message: "Credential not found",
       });
     }
 
-    // Verify the passkey login (using STORED challenge, not client-supplied)
-    const verification = await webauthn.verifyPasskeyLogin(
-      response,
-      storedChallenge, // ← Server-side stored challenge, not from client
-      passkey.publicKey,
-      passkey.counter,
-      passkey.credentialId,
-    );
+    const passkey = user.passkeys.find((pk) => pk.credentialId === id);
 
-    // Remove challenge (one-time use)
-    challengeStore.remove(email, "login");
+    if (!passkey) {
+      return res.status(401).json({
+        success: false,
+        message: "Credential not found for user",
+      });
+    }
 
-    // Update counter to prevent replay attacks
-    passkey.counter = verification.newCounter;
-    await user.save();
+    const challenge = challengeStore.get(user.email, "login");
+    if (!challenge) {
+      return res.status(400).json({
+        success: false,
+        message: "No login challenge found. Please start fresh.",
+      });
+    }
 
-    // Generate JWT
-    const token = generateJWT(user._id);
-    setJWTCookie(res, token);
+    try {
+      // SimpleWebAuthn v8 expects browser response fields as base64url strings.
+      const verification = await verifyAuthenticationResponse({
+        response: {
+          id,
+          rawId,
+          response: {
+            clientDataJSON: response.clientDataJSON,
+            authenticatorData: response.authenticatorData,
+            signature: response.signature,
+          },
+          type,
+        },
+        expectedChallenge: challenge,
+        expectedOrigin: process.env.ORIGIN || "http://localhost:5173",
+        expectedRPID: process.env.RP_ID || "localhost",
+        authenticator: {
+          credentialID: base64urlToBuffer(passkey.credentialId),
+          credentialPublicKey: base64urlToBuffer(passkey.publicKey),
+          counter: passkey.counter,
+        },
+        requireUserVerification: false,
+      });
 
-    console.log(`✅ Passkey login successful: ${user.email}`);
+      if (!verification.verified) {
+        throw new Error("Passkey verification failed");
+      }
 
-    res.json({
-      success: true,
-      message: "Logged in successfully",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        provider: user.provider,
-      },
-    });
+      passkey.counter = verification.authenticationInfo.newCounter;
+      await user.save();
+
+      challengeStore.remove(user.email, "login");
+
+      const token = generateJWT(user._id);
+      setJWTCookie(res, token);
+
+      console.log(`✅ User logged in via Passkey: ${user.email}`);
+
+      res.json({
+        success: true,
+        message: "Login successful",
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      });
+    } catch (verifyError) {
+      console.error("SimpleWebAuthn error:", verifyError.message);
+      return res.status(401).json({
+        success: false,
+        message: `Passkey verification failed: ${verifyError.message}`,
+      });
+    }
   } catch (error) {
-    console.error("Passkey login verify error:", error);
-    res.status(400).json({
+    console.error("Passkey login error:", error.message);
+    res.status(401).json({
       success: false,
-      message: error.message,
+      message: `Failed to verify login: ${error.message}`,
     });
   }
 });
