@@ -60,10 +60,10 @@ function App() {
         <Route element={<Layout />}>
           {/* Public page */}
           <Route path="/" element={<HomePage />} />
+          <Route path="/shop" element={<ShopPage />} />
 
           {/* ===== PROTECTED ROUTES ===== */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/shop" element={<ShopPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Route>
