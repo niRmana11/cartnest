@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { AlertCircle, RefreshCw, ShoppingBag } from "lucide-react";
 import { getProducts } from "../api/productApi";
@@ -9,7 +10,6 @@ import { useAuthStore } from "../store/authStore";
 import { getCategories } from "../api/categoryApi";
 
 export default function ShopPage() {
-  const [selectedCategory, setSelectedCategory] = useState("all");
   const [products, setProducts] = useState([]);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,6 +17,11 @@ export default function ShopPage() {
   const [categories, setCategories] = useState([]);
   const { addToCart } = useCartStore();
   const { isAuthenticated } = useAuthStore();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categoryFromUrl = searchParams.get("category") || "all";
+
+  const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl);
 
   const loadProducts = async (categorySlug = selectedCategory) => {
     try {
@@ -54,11 +59,21 @@ export default function ShopPage() {
   }, []);
 
   useEffect(() => {
+    setSelectedCategory(categoryFromUrl);
+  }, [categoryFromUrl]);
+
+  useEffect(() => {
     loadProducts(selectedCategory);
   }, [selectedCategory]);
 
   const handleCategoryChange = (categorySlug) => {
     setSelectedCategory(categorySlug);
+
+    if (categorySlug === "all") {
+      setSearchParams({});
+    } else {
+      setSearchParams({ category: categorySlug });
+    }
   };
 
   const handleAddToCart = async (product) => {
