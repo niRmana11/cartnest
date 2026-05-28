@@ -48,7 +48,7 @@ function App() {
   return (
     <BrowserRouter>
       {/* Toast notifications */}
-      <Toaster position="top-right" />
+      <Toaster position="bottom-right" />
 
       <Routes>
         {/* ===== PUBLIC ROUTES ===== */}
