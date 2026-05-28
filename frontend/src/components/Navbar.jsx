@@ -28,9 +28,15 @@ export default function Navbar() {
   // Get cart item count from Zustand store
   const { itemCount: cartItemCount } = useCartStore();
 
-  const handleLogout = () => {
-    logout();
-    setUserMenuOpen(false);
+  const handleLogout = async () => {
+    try {
+      await axiosInstance.post("/auth/logout");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      logout();
+      setUserMenuOpen(false);
+    }
   };
 
   return (
