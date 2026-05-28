@@ -1,3 +1,4 @@
+import { useAuthStore } from "../store/authStore";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -36,6 +37,7 @@ const categories = [
 ];
 
 export default function HomePage() {
+  const { isAuthenticated } = useAuthStore();
   return (
     <div className="space-y-12 py-6">
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
@@ -63,12 +65,14 @@ export default function HomePage() {
               <ArrowRight className="w-5 h-5" />
             </Link>
 
-            <Link
-              to="/login"
-              className="btn-secondary inline-flex items-center justify-center"
-            >
-              Login to Save Cart
-            </Link>
+            {!isAuthenticated && (
+              <Link
+                to="/login"
+                className="btn-secondary inline-flex items-center justify-center"
+              >
+                Login to Save Cart
+              </Link>
+            )}
           </div>
         </div>
 
