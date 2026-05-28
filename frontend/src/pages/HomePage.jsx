@@ -1,17 +1,134 @@
+import { Link } from "react-router-dom";
+import {
+  ArrowRight,
+  CakeSlice,
+  Cookie,
+  Broccoli,
+  ShoppingBag,
+  Apple,
+} from "lucide-react";
+
+const categories = [
+  {
+    name: "Vegetables",
+    description: "Fresh greens and farm-picked essentials.",
+    icon: Broccoli,
+    accent: "bg-primary-100 text-primary-700",
+  },
+  {
+    name: "Fruits",
+    description: "Sweet seasonal picks for every day.",
+    icon: Apple,
+    accent: "bg-red-100 text-red-700",
+  },
+  {
+    name: "Cakes",
+    description: "Soft celebration cakes and bakery favorites.",
+    icon: CakeSlice,
+    accent: "bg-purple-100 text-purple-700",
+  },
+  {
+    name: "Biscuits",
+    description: "Tea-time snacks and crunchy treats.",
+    icon: Cookie,
+    accent: "bg-amber-100 text-amber-700",
+  },
+];
+
 export default function HomePage() {
   return (
-    <div className="text-center py-12">
-      <h1 className="text-4xl font-bold text-gray-900 mb-4">
-        Welcome to CartNest 🛒
-      </h1>
-      <p className="text-lg text-gray-600 mb-8">
-        Fresh shopping experience for modern shoppers
-      </p>
-      <div className="p-8 bg-primary-50 rounded-lg border-2 border-primary-200">
-        <p className="text-gray-700">
-          Coming soon... Home page content will be added in Day 4!
-        </p>
-      </div>
+    <div className="space-y-12 py-6">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-50 text-primary-700 text-sm font-semibold mb-6 border border-primary-100">
+            <ShoppingBag className="w-4 h-4" />
+            Fresh shopping made simple
+          </div>
+
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 leading-tight mb-5">
+            Shop fresh products for your daily cart.
+          </h1>
+
+          <p className="text-lg text-gray-600 mb-8 max-w-xl">
+            Browse vegetables, fruits, cakes, and biscuits in one clean CartNest
+            experience built for fast, responsive shopping.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link
+              to="/shop"
+              className="btn-primary inline-flex items-center justify-center gap-2"
+            >
+              Start Shopping
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+
+            <Link
+              to="/login"
+              className="btn-secondary inline-flex items-center justify-center"
+            >
+              Login to Save Cart
+            </Link>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md border border-gray-100 p-5">
+          <div className="aspect-4/3 rounded-lg bg-primary-50 border border-primary-100 overflow-hidden">
+            <img
+              src="/src/assets/hero.png"
+              alt="CartNest fresh shopping products"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Browse by category
+            </h2>
+            <p className="text-gray-600 mt-1">
+              Choose a category and quickly find what you need.
+            </p>
+          </div>
+
+          <Link
+            to="/shop"
+            className="text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center gap-2"
+          >
+            View all products
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {categories.map((category) => {
+            const Icon = category.icon;
+
+            return (
+              <Link
+                key={category.name}
+                to="/shop"
+                className="card hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
+              >
+                <div
+                  className={`w-11 h-11 rounded-lg flex items-center justify-center mb-4 ${category.accent}`}
+                >
+                  <Icon className="w-5 h-5" />
+                </div>
+
+                <h3 className="font-bold text-gray-900 mb-2">
+                  {category.name}
+                </h3>
+
+                <p className="text-sm text-gray-600">{category.description}</p>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }
