@@ -26,11 +26,11 @@ export const useAuthStore = create((set) => ({
    * Called after successful login
    */
   setUser: (userData) =>
-    set((state) => ({
+    set({
       user: userData,
       isAuthenticated: !!userData, // true if userData exists, false if null
       error: null,
-    })),
+    }),
 
   /**
    * setLoading - Update loading state
@@ -52,12 +52,12 @@ export const useAuthStore = create((set) => ({
    * For now, we'll set it up to accept user data from OAuth callback
    */
   login: (userData) =>
-    set((state) => ({
+    set({
       user: userData,
       isAuthenticated: true,
       isLoading: false,
       error: null,
-    })),
+    }),
 
   /**
    * logout - Clear user state
@@ -87,13 +87,15 @@ export const useAuthStore = create((set) => ({
       // api is axiosInstance passed from App.jsx
       // It already has /api in baseURL
       const response = await api.get("/auth/me");
+      const user = response.data.isAuthenticated ? response.data.user : null;
+
       set({
-        user: response.data.user,
-        isAuthenticated: true,
+        user,
+        isAuthenticated: !!user,
         isLoading: false,
         error: null,
       });
-    } catch (error) {
+    } catch {
       // JWT invalid or expired
       set({
         user: null,

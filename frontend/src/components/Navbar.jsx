@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ShoppingCart, Menu, X, LogOut, User } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { useCartStore } from "../store/cartStore";
@@ -26,7 +26,7 @@ export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuthStore();
 
   // Get cart item count from Zustand store
-  const { itemCount: cartItemCount } = useCartStore();
+  const { itemCount: cartItemCount, localClearCart } = useCartStore();
 
   const handleLogout = async () => {
     try {
@@ -35,6 +35,7 @@ export default function Navbar() {
       console.error("Logout failed:", error);
     } finally {
       logout();
+      localClearCart();
       setUserMenuOpen(false);
     }
   };
