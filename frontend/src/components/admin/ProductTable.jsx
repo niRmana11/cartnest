@@ -16,7 +16,7 @@ export default function ProductTable({ products, onEdit, onDelete, isBusy }) {
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-gray-100 text-sm text-gray-500">
-              <th className="py-3 pr-4">Product</th>
+              <th className="py-3 pr-4 w-[50%]">Product</th>
               <th className="py-3 pr-4">Category</th>
               <th className="py-3 pr-4">Price</th>
               <th className="py-3 pr-4">Stock</th>
@@ -43,7 +43,7 @@ export default function ProductTable({ products, onEdit, onDelete, isBusy }) {
                       <p className="font-semibold text-gray-900">
                         {product.name}
                       </p>
-                      <p className="text-xs text-gray-500 line-clamp-1">
+                      <p className="text-xs text-gray-500 line-clamp-2">
                         {product.description}
                       </p>
                     </div>
@@ -70,7 +70,7 @@ export default function ProductTable({ products, onEdit, onDelete, isBusy }) {
                   </span>
                 </td>
 
-                <td className="py-4 pr-4">
+                <td className="py-4">
                   <div className="flex justify-end gap-2">
                     <button
                       type="button"
