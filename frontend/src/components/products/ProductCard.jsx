@@ -6,8 +6,8 @@ export default function ProductCard({ product, onAddToCart, isAdding }) {
   const isOutOfStock = product.stock <= 0;
 
   return (
-    <article className="card p-0 overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-200">
-      <div className="aspect-4/3 bg-gray-100 overflow-hidden">
+    <article className="card p-0 overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-200 flex flex-col h-full">
+      <div className="aspect-4/3 bg-gray-100 overflow-hidden rounded">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -22,7 +22,7 @@ export default function ProductCard({ product, onAddToCart, isAdding }) {
         )}
       </div>
 
-      <div className="p-5">
+      <div className="p-5 flex flex-col flex-1">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
             <p className="text-xs font-semibold text-primary-600 uppercase tracking-wide mb-1">
@@ -38,7 +38,7 @@ export default function ProductCard({ product, onAddToCart, isAdding }) {
           </p>
         </div>
 
-        <p className="text-sm text-gray-600 line-clamp-2 mb-4 min-h-10">
+        <p className="text-sm text-gray-600 mb-4 flex-1 leading-relaxed">
           {product.description || "Fresh CartNest product ready for your cart."}
         </p>
 
@@ -46,8 +46,8 @@ export default function ProductCard({ product, onAddToCart, isAdding }) {
           <span
             className={`text-xs font-semibold px-2 py-1 rounded-lg ${
               isOutOfStock
-                ? "bg-red-50 text-red-700"
-                : "bg-primary-50 text-primary-700"
+                ? "bg-red-100 text-red-700"
+                : "bg-primary-100 text-primary-700"
             }`}
           >
             {isOutOfStock ? "Out of stock" : `${product.stock} in stock`}
@@ -62,7 +62,7 @@ export default function ProductCard({ product, onAddToCart, isAdding }) {
             {isAdding ? (
               <Loader className="w-4 h-4 animate-spin" />
             ) : (
-              <Plus className="w-4 h-4" />
+              <Plus className="w-5 h-5" />
             )}
             Add to Cart
           </button>
