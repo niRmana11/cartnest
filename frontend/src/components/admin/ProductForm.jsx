@@ -1,4 +1,4 @@
-import { ImagePlus, Loader, Save, X } from "lucide-react";
+import { ImagePlus, Loader, Save, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 const initialForm = {
@@ -214,8 +214,10 @@ export default function ProductForm({
       >
         {isSaving ? (
           <Loader className="w-4 h-4 animate-spin" />
+        ) : editingProduct ? (
+          <Save className="w-5 h-5" />
         ) : (
-          <Save className="w-4 h-4" />
+          <Plus className="w-5 h-5" />
         )}
         {editingProduct ? "Update Product" : "Create Product"}
       </button>
