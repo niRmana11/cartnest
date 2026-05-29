@@ -182,7 +182,7 @@ export default function CartPage() {
 
       {showOrderSummary && (
         <div className="fixed inset-0 z-50 bg-black/40 px-4 py-8 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto py-5 px-3">
             <div className="flex items-center justify-between gap-4 p-5 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
