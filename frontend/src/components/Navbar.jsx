@@ -23,7 +23,7 @@ export default function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   // Get auth state from Zustand store
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, isLoading, logout } = useAuthStore();
 
   // Get cart item count from Zustand store
   const { itemCount: cartItemCount, localClearCart } = useCartStore();
@@ -124,7 +124,7 @@ export default function Navbar() {
             </Link>
 
             {/* User Menu or Login Button */}
-            {isAuthenticated ? (
+            {isLoading ? null : isAuthenticated ? (
               // ===== LOGGED IN: User Dropdown Menu =====
               <div className="relative">
                 {/* User Avatar Button */}

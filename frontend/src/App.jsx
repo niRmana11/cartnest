@@ -19,9 +19,8 @@ import axiosInstance from "./api/axiosInstance";
  */
 
 function App() {
-  const { checkAuth } = useAuthStore();
   const { fetchCart, localClearCart } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
+  const { checkAuth, isAuthenticated, isLoading } = useAuthStore();
 
   // ===== Initialize Auth & Cart on App Load =====
   useEffect(() => {
@@ -44,6 +43,10 @@ function App() {
       localClearCart();
     }
   }, [isAuthenticated, fetchCart, localClearCart]);
+
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <BrowserRouter>
