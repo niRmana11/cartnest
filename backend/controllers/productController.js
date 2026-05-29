@@ -15,11 +15,10 @@ import {
  * - Deleting products (admin only)
  */
 
-// ===== PUBLIC: GET PRODUCTS =====
+// PUBLIC: GET PRODUCTS
 
 /**
  * Get all active products
- * Optional query: ?category=slug
  */
 export const getAllProducts = async (req, res) => {
   try {
@@ -121,14 +120,11 @@ export const getProductsByCategory = async (req, res) => {
   }
 };
 
-// ===== ADMIN: CREATE PRODUCT =====
+// ADMIN: CREATE PRODUCT
 
 /**
  * Create new product with image upload
  *
- * Protected: Admin only
- * Request body: { name, description, price, category, stock }
- * File: req.file (image)
  */
 export const createProduct = async (req, res) => {
   try {
@@ -208,14 +204,11 @@ export const createProduct = async (req, res) => {
   }
 };
 
-// ===== ADMIN: UPDATE PRODUCT =====
+// ADMIN: UPDATE PRODUCT
 
 /**
  * Update existing product
  *
- * Protected: Admin only
- * Can update: name, description, price, category, stock
- * Can change image: new image uploaded + old deleted
  */
 export const updateProduct = async (req, res) => {
   try {
@@ -308,14 +301,11 @@ export const updateProduct = async (req, res) => {
   }
 };
 
-// ===== ADMIN: DELETE PRODUCT =====
+// ADMIN: DELETE PRODUCT
 
 /**
  * Delete product (soft delete + image removal)
  *
- * Protected: Admin only
- * Sets isActive = false (soft delete)
- * Deletes image from Cloudinary
  */
 export const deleteProduct = async (req, res) => {
   try {

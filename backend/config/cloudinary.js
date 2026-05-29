@@ -6,11 +6,6 @@ import { v2 as cloudinary } from "cloudinary";
  * Handles image uploads to Cloudinary CDN
  * Returns: { url, publicId } for storage in MongoDB
  *
- * Why Cloudinary?
- * - Free tier: 25 credits/month (enough for project)
- * - Automatic image optimization + CDN
- * - No server storage needed
- * - Easy deletion with publicId
  */
 
 // Configure Cloudinary with credentials from .env
@@ -22,19 +17,19 @@ cloudinary.config({
 
 /**
  * Upload image to Cloudinary
- * @param fileBuffer - Buffer from Multer
- * @param fileName - Original filename
+ * @param fileBuffer
+ * @param fileName
  * @returns { url, publicId }
  */
 export const uploadImageToCloudinary = async (fileBuffer, fileName) => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
-        folder: "cartnest/products", // Organize uploads in folder
+        folder: "cartnest/products",
         resource_type: "auto",
-        public_id: `${Date.now()}-${fileName.replace(/\s+/g, "-")}`, // Unique ID
-        quality: "auto", // Auto-optimize quality
-        fetch_format: "auto", // Auto-optimize format
+        public_id: `${Date.now()}-${fileName.replace(/\s+/g, "-")}`,
+        quality: "auto",
+        fetch_format: "auto",
       },
       (error, result) => {
         if (error) {
@@ -55,8 +50,8 @@ export const uploadImageToCloudinary = async (fileBuffer, fileName) => {
 
 /**
  * Delete image from Cloudinary
- * @param publicId - Cloudinary public ID
- * @returns deletion result
+ * @param publicId
+ * @returns
  */
 export const deleteImageFromCloudinary = async (publicId) => {
   try {
@@ -72,8 +67,8 @@ export const deleteImageFromCloudinary = async (publicId) => {
 /**
  * Upload image from URL
  * Useful for seeding with placeholder images
- * @param imageUrl - Public image URL
- * @param fileName - File name for reference
+ * @param imageUrl
+ * @param fileName
  * @returns { url, publicId }
  */
 export const uploadImageFromUrl = async (imageUrl, fileName) => {

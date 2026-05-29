@@ -3,11 +3,6 @@ import mongoose from "mongoose";
 /**
  * Cart Schema
  *
- * Represents a shopping cart for a user
- * Contains items with quantity + price snapshot (to prevent surprises if product price changes)
- *
- * Design: One cart per user (stored server-side, not in browser)
- * This survives browser refresh + logout/login
  */
 const cartSchema = new mongoose.Schema(
   {
@@ -16,7 +11,7 @@ const cartSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true, // One cart per user
+      unique: true,
     },
     // Array of items in the cart
     items: [
@@ -34,9 +29,6 @@ const cartSchema = new mongoose.Schema(
           min: [1, "Quantity must be at least 1"],
           default: 1,
         },
-        // IMPORTANT: Snapshot of product price when added to cart
-        // WHY: If admin changes product price later, user still sees old price
-        // This prevents: "I added at $5, now it's $50 in checkout!" surprise
         priceAtTime: {
           type: Number,
           required: true,
@@ -45,15 +37,14 @@ const cartSchema = new mongoose.Schema(
     ],
   },
   {
-    timestamps: true, // Auto-add createdAt, updatedAt
+    timestamps: true,
   },
 );
 
-// ===== QUERY HELPERS =====
+// QUERY HELPERS
 
 /**
  * populate: Auto-populate product details when fetching cart
- * Usage: const cart = await Cart.findById(id).populate('product')
  */
 cartSchema.pre(["find", "findOne"], function () {
   this.populate({
@@ -62,11 +53,11 @@ cartSchema.pre(["find", "findOne"], function () {
   });
 });
 
-// ===== INSTANCE METHODS =====
+// INSTANCE METHODS
 
 /**
  * calculateTotal: Sum up all item costs (quantity * priceAtTime)
- * @returns total price
+ * @returns
  */
 cartSchema.methods.calculateTotal = function () {
   return this.items.reduce((total, item) => {
@@ -76,7 +67,7 @@ cartSchema.methods.calculateTotal = function () {
 
 /**
  * getItemCount: Total number of items in cart
- * @returns item count
+ * @returns
  */
 cartSchema.methods.getItemCount = function () {
   return this.items.reduce((count, item) => count + item.quantity, 0);
@@ -84,8 +75,8 @@ cartSchema.methods.getItemCount = function () {
 
 /**
  * findItem: Find a specific item in cart by product ID
- * @param productId - Product ObjectId
- * @returns item or null
+ * @param productId
+ * @returns
  */
 cartSchema.methods.findItem = function (productId) {
   const targetId = productId?.toString();
@@ -96,10 +87,10 @@ cartSchema.methods.findItem = function (productId) {
 
 /**
  * addItem: Add or increase quantity of item in cart
- * @param productId - Product ObjectId
- * @param quantity - Quantity to add
- * @param priceAtTime - Current product price (snapshot)
- * @returns modified cart
+ * @param productId
+ * @param quantity
+ * @param priceAtTime
+ * @returns
  */
 cartSchema.methods.addItem = function (productId, quantity, priceAtTime) {
   const qty = Number(quantity);
@@ -122,8 +113,8 @@ cartSchema.methods.addItem = function (productId, quantity, priceAtTime) {
 
 /**
  * removeItem: Remove item from cart
- * @param productId - Product ObjectId
- * @returns modified cart
+ * @param productId
+ * @returns
  */
 cartSchema.methods.removeItem = function (productId) {
   const targetId = productId?.toString();
@@ -135,9 +126,9 @@ cartSchema.methods.removeItem = function (productId) {
 
 /**
  * updateItemQuantity: Update quantity of existing item
- * @param productId - Product ObjectId
- * @param newQuantity - New quantity (0 = remove)
- * @returns modified cart
+ * @param productId
+ * @param newQuantity
+ * @returns
  */
 cartSchema.methods.updateItemQuantity = function (productId, newQuantity) {
   if (newQuantity <= 0) {
@@ -155,7 +146,7 @@ cartSchema.methods.updateItemQuantity = function (productId, newQuantity) {
 
 /**
  * clear: Empty the cart
- * @returns empty cart
+ * @returns
  */
 cartSchema.methods.clear = function () {
   this.items = [];
@@ -181,12 +172,12 @@ cartSchema.methods.toJSON = function () {
   };
 };
 
-// ===== STATICS (Class Methods) =====
+// STATICS (Class Methods)
 
 /**
  * findOrCreateByUser: Get cart for user, create if doesn't exist
- * @param userId - User ObjectId
- * @returns cart
+ * @param userId
+ * @returns
  */
 cartSchema.statics.findOrCreateByUser = async function (userId) {
   let cart = await this.findOne({ user: userId });

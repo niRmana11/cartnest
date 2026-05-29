@@ -12,13 +12,11 @@ import Product from "../models/Product.js";
  * - Clear entire cart
  */
 
-// ===== GET CART =====
+// GET CART
 
 /**
  * Get current user's cart
  *
- * Protected: User must be logged in
- * Returns: { success, cart: { items, total, itemCount } }
  */
 export const getCart = async (req, res) => {
   try {
@@ -46,19 +44,11 @@ export const getCart = async (req, res) => {
   }
 };
 
-// ===== ADD TO CART =====
+// ADD TO CART
 
 /**
  * Add item to cart
  *
- * Protected: User must be logged in
- * Request body: { productId, quantity }
- *
- * Logic:
- * - Verify product exists and is active
- * - Check stock availability
- * - If product already in cart, increase quantity
- * - If new product, add to cart with price snapshot
  */
 export const addToCart = async (req, res) => {
   try {
@@ -127,19 +117,11 @@ export const addToCart = async (req, res) => {
   }
 };
 
-// ===== UPDATE CART ITEM =====
+// UPDATE CART ITEM
 
 /**
  * Update quantity of item in cart
  *
- * Protected: User must be logged in
- * URL params: itemId (product ID)
- * Request body: { quantity }
- *
- * Logic:
- * - If quantity = 0, remove item
- * - If quantity > 0, update quantity
- * - Verify stock available
  */
 export const updateCartItem = async (req, res) => {
   try {
@@ -233,13 +215,11 @@ export const updateCartItem = async (req, res) => {
   }
 };
 
-// ===== REMOVE FROM CART =====
+// REMOVE FROM CART
 
 /**
  * Remove single item from cart
  *
- * Protected: User must be logged in
- * URL params: itemId (product ID)
  */
 export const removeFromCart = async (req, res) => {
   try {
@@ -289,12 +269,11 @@ export const removeFromCart = async (req, res) => {
   }
 };
 
-// ===== CLEAR CART =====
+// CLEAR CART
 
 /**
  * Clear entire cart (remove all items)
  *
- * Protected: User must be logged in
  */
 export const clearCart = async (req, res) => {
   try {
