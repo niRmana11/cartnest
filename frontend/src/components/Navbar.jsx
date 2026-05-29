@@ -49,8 +49,14 @@ export default function Navbar() {
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             {/* Logo Icon */}
-            <div className="p-2 bg-primary-500 rounded-lg shadow-md">
-              <ShoppingCart className="w-6 h-6 text-white" />
+            <div
+              className="p-2 bg-primary-500 rounded-lg shadow-md"
+              style={{ transform: "rotate(-8deg)" }}
+            >
+              <ShoppingCart
+                className="w-6 h-6 text-white"
+                style={{ transform: "rotate(-8deg)" }}
+              />
             </div>
 
             {/* Brand Name */}
@@ -58,7 +64,9 @@ export default function Navbar() {
               <span className="font-bold text-xl text-primary-600">
                 CartNest
               </span>
-              <span className="text-xs text-gray-500">Fresh Shopping</span>
+              <span className="text-xs text-gray-500">
+                Your daily fresh market.
+              </span>
             </div>
 
             {/* Mobile: Just show CartNest */}
@@ -102,9 +110,9 @@ export default function Navbar() {
             {/* Cart Icon with Badge */}
             <Link
               to="/cart"
-              className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="relative p-2 rounded-lg transition-colors"
             >
-              <ShoppingCart className="w-6 h-6 text-gray-700" />
+              <ShoppingCart className="w-6 h-6 text-gray-700 hover:text-primary-600" />
 
               {/* Badge showing item count */}
               {cartItemCount > 0 && (
@@ -121,15 +129,15 @@ export default function Navbar() {
                 {/* User Avatar Button */}
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="flex items-center gap-2 p-2 rounded-lg transition-colors cursor-pointer"
                 >
                   {/* User Icon */}
                   <div className="p-2 bg-primary-100 rounded-full">
-                    <User className="w-5 h-5 text-primary-600" />
+                    <User className="w-5 h-5 text-primary-600 hover:text-primary-500" />
                   </div>
 
                   {/* User Name (Desktop) */}
-                  <span className="hidden sm:block text-sm font-medium text-gray-700">
+                  <span className="hidden sm:block text-sm font-medium text-gray-700 hover:text-primary-600">
                     {user?.name?.split(" ")[0]}
                   </span>
                 </button>
@@ -159,7 +167,6 @@ export default function Navbar() {
                         >
                           Admin Dashboard
                         </Link>
-                        <hr className="my-1" />
                       </>
                     )}
 
