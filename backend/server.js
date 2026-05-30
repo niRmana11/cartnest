@@ -22,7 +22,7 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
-// ===== MIDDLEWARE =====
+// MIDDLEWARE
 
 // Security: Add HTTP security headers
 app.use(helmet());
@@ -31,7 +31,7 @@ app.use(helmet());
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173",
-    credentials: true, // Allow cookies to be sent with requests
+    credentials: true,
   }),
 );
 
@@ -42,14 +42,9 @@ app.use(express.urlencoded({ extended: true }));
 // Cookie parser: Parse cookies from incoming requests
 app.use(cookieParser());
 
-// ===== SESSION MIDDLEWARE =====
+//  SESSION MIDDLEWARE
 /**
  * express-session with MongoDB store
- *
- * Sessions stored in MongoDB instead of memory:
- * - Persistent across server restarts
- * - Shareable across multiple server instances
- * - Production-ready for deployment to Render
  */
 app.use(
   session({
@@ -58,13 +53,13 @@ app.use(
     saveUninitialized: false,
     store: new MongoStore({
       mongoUrl: process.env.MONGO_URI,
-      touchAfter: 24 * 3600, // Lazy session update (seconds)
+      touchAfter: 24 * 3600,
     }),
     cookie: {
-      secure: process.env.NODE_ENV === "production", // HTTPS only in production
+      secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: "lax", // Allow OAuth redirect
+      maxAge: 24 * 60 * 60 * 1000,
+      sameSite: "lax",
     },
   }),
 );
@@ -73,14 +68,13 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ===== RATE LIMITING =====
-// Apply general rate limiter to all API routes
+// Apply general rate limiter
 app.use("/api/", generalLimiter);
 
-// Apply cart limiter to cart routes
+// Apply cart limiter
 app.use("/api/cart", cartLimiter);
 
-// ===== MOUNT ROUTES =====
+// MOUNT ROUTES
 // mount auth routes
 app.use("/api/auth", authRoutes);
 // mount product routes
@@ -92,17 +86,15 @@ app.use("/api/categories", categoryRoutes);
 
 /**
  * Health check endpoint
- * Returns: { status: 'OK' }
  */
 app.get("/api/health", (req, res) => {
   res.json({ status: "OK", message: "Server is running" });
 });
 
-// ===== ERROR HANDLER MIDDLEWARE =====
+// ERROR HANDLER MIDDLEWARE
 
 /**
  * Global error handler
- * Catches all errors thrown by routes and returns standardized error response
  */
 app.use((err, req, res, next) => {
   console.error("Error:", err.message);
@@ -113,7 +105,7 @@ app.use((err, req, res, next) => {
   res.status(statusCode).json({
     success: false,
     message,
-    error: process.env.NODE_ENV === "development" ? err : {}, // Show stack trace only in dev
+    error: process.env.NODE_ENV === "development" ? err : {},
   });
 });
 
@@ -125,16 +117,14 @@ app.use((req, res) => {
   });
 });
 
-// ===== START SERVER =====
+// START SERVER
 
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
-    // Connect to MongoDB first
     await connectDB();
 
-    // Then start Express server
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
       console.log(`📚 API Health: http://localhost:${PORT}/api/health`);

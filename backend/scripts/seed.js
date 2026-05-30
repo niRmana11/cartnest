@@ -22,14 +22,10 @@ import { uploadImageFromUrl } from "../config/cloudinary.js";
  * - 4 Categories (Vegetables, Fruits, Cakes, Biscuits)
  * - 8 Products (2 per category)
  *
- * Usage:
- *   npm run seed
- *
- * Always deletes existing data before seeding (fresh start)
  */
 
 const SAMPLE_PRODUCTS = [
-  // ===== VEGETABLES (2) =====
+  // VEGETABLES (2)
   {
     name: "Fresh Carrot",
     description:
@@ -48,10 +44,10 @@ const SAMPLE_PRODUCTS = [
     categorySlug: "vegetables",
     stock: 35,
     imageUrl:
-      "https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=400&q=80", // Spinach image placeholder
+      "https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=400&q=80",
   },
 
-  // ===== FRUITS (2) =====
+  //  FRUITS (2)
   {
     name: "Red Apple",
     description:
@@ -60,7 +56,7 @@ const SAMPLE_PRODUCTS = [
     categorySlug: "fruits",
     stock: 40,
     imageUrl:
-      "https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?auto=format&fit=crop&w=400&q=80", // Apple image placeholder
+      "https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?auto=format&fit=crop&w=400&q=80",
   },
   {
     name: "Yellow Banana",
@@ -70,10 +66,10 @@ const SAMPLE_PRODUCTS = [
     categorySlug: "fruits",
     stock: 60,
     imageUrl:
-      "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&w=400&q=80", // Banana image placeholder
+      "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&w=400&q=80",
   },
 
-  // ===== CAKES (2) =====
+  // CAKES (2)
   {
     name: "Chocolate Cake",
     description:
@@ -82,7 +78,7 @@ const SAMPLE_PRODUCTS = [
     categorySlug: "cakes",
     stock: 12,
     imageUrl:
-      "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=400&q=80", // Chocolate cake placeholder
+      "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=400&q=80",
   },
   {
     name: "Vanilla Cake",
@@ -92,10 +88,10 @@ const SAMPLE_PRODUCTS = [
     categorySlug: "cakes",
     stock: 15,
     imageUrl:
-      "https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?auto=format&fit=crop&w=400&q=80", // Vanilla cake placeholder
+      "https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?auto=format&fit=crop&w=400&q=80",
   },
 
-  // ===== BISCUITS (2) =====
+  // BISCUITS (2)
   {
     name: "Chocolate Chip Cookies",
     description:
@@ -104,7 +100,7 @@ const SAMPLE_PRODUCTS = [
     categorySlug: "biscuits",
     stock: 30,
     imageUrl:
-      "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=400&q=80", // Chocolate chip cookies placeholder
+      "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=400&q=80",
   },
   {
     name: "Digestive Biscuits",
@@ -114,7 +110,7 @@ const SAMPLE_PRODUCTS = [
     categorySlug: "biscuits",
     stock: 50,
     imageUrl:
-      "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=400&q=80", // Digestive biscuits placeholder
+      "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=400&q=80",
   },
 ];
 
@@ -127,12 +123,12 @@ async function seedDatabase() {
     });
     console.log("MongoDB connected");
 
-    // ===== STEP 1: Delete existing data =====
+    //  STEP 1: Delete existing data
     console.log("\nDeleting existing products...");
     await Product.deleteMany({});
     console.log("Products deleted");
 
-    // ===== STEP 2: Upload images to Cloudinary =====
+    // STEP 2: Upload images to Cloudinary
     console.log("\n Uploading product images to Cloudinary...");
     const productsWithImages = [];
 
@@ -159,7 +155,7 @@ async function seedDatabase() {
           `  Failed to upload ${product.name}, using placeholder URL`,
           imageError.message,
         );
-        // If upload fails, still add product with URL (will try to load from URL)
+
         productsWithImages.push({
           ...product,
           image: {
@@ -170,7 +166,7 @@ async function seedDatabase() {
       }
     }
 
-    // ===== STEP 3: Get category references =====
+    // STEP 3: Get category references
     console.log("\n Linking products to categories...");
     const categorySlugs = [
       ...new Set(SAMPLE_PRODUCTS.map((p) => p.categorySlug)),
@@ -188,18 +184,18 @@ async function seedDatabase() {
 
       // Link category reference
       product.category = category._id;
-      delete product.categorySlug; // Remove slug field, use reference instead
+      delete product.categorySlug;
     }
 
-    // ===== STEP 4: Create products =====
-    console.log("\n🛒 Creating products...");
+    // STEP 4: Create products
+    console.log("\n Creating products...");
     for (const product of productsWithImages) {
       const newProduct = new Product(product);
       await newProduct.save();
       console.log(`  Created: ${newProduct.name} (Rs. ${newProduct.price})`);
     }
 
-    // ===== STEP 5: Verify seeding =====
+    // STEP 5: Verify seeding
     const productCount = await Product.countDocuments();
     console.log(`\nSeeding complete! ${productCount} products created.`);
 

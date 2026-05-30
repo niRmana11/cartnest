@@ -20,10 +20,10 @@ const categorySchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
-    // Icon for UI display (emoji or icon name)
+    // Icon key for UI display
     icon: {
       type: String,
-      default: "📦",
+      default: "package",
     },
   },
   {
