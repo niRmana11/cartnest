@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 
 /**
  * Connect to MongoDB Atlas
- * Fails fast if connection fails (prevents silent errors)
  */
 export const connectDB = async () => {
   try {
@@ -15,6 +14,6 @@ export const connectDB = async () => {
     return conn;
   } catch (error) {
     console.error(`MongoDB connection failed: ${error.message}`);
-    process.exit(1); // Fail fast — don't start server if DB is unreachable
+    process.exit(1);
   }
 };

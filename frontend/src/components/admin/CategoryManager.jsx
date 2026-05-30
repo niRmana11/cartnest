@@ -42,6 +42,7 @@ export default function CategoryManager({
     }
 
     setEditingCategory(null);
+    setForm(initialForm);
   };
 
   return (
@@ -140,9 +141,9 @@ export default function CategoryManager({
             {isSaving ? (
               <Loader className="w-4 h-4 animate-spin" />
             ) : editingCategory ? (
-              <Save className="w-4 h-4" />
+              <Save className="w-5 h-5" />
             ) : (
-              <Plus className="w-4 h-4" />
+              <Plus className="w-5 h-5" />
             )}
 
             {editingCategory ? "Update Category" : "Create Category"}

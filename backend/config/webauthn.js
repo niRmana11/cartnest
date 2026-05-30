@@ -8,15 +8,6 @@ import {
 /**
  * WebAuthn Configuration
  *
- * Passkey (WebAuthn) Flow:
- * 1. User wants to register a passkey
- * 2. Backend generates registration challenge
- * 3. User's browser shows biometric/security key prompt
- * 4. Browser generates credential (public key + credential ID)
- * 5. Backend verifies credential and stores it
- * 6. User can now login with passkey
- *
- * Security: Public key stored on server, private key never leaves user's device
  */
 
 // Get config from environment variables
@@ -24,14 +15,13 @@ const rpID = process.env.RP_ID || "localhost";
 const rpName = process.env.RP_NAME || "CartNest";
 const origin = process.env.ORIGIN || "http://localhost:5173";
 
-// ===== REGISTRATION HELPERS =====
+// REGISTRATION HELPERS
 
 /**
- * Step 1: Generate registration options
- * Frontend calls this to get a challenge
+ * Generate registration options
  *
- * @param userEmail - User's email (used as username in WebAuthn)
- * @returns Registration options with challenge
+ * @param userEmail
+ * @returns
  */
 export const generatePasskeyRegistrationOptions = async (userEmail) => {
   try {
@@ -44,7 +34,7 @@ export const generatePasskeyRegistrationOptions = async (userEmail) => {
       authenticatorSelection: {
         authenticatorAttachment: "platform",
         residentKey: "preferred",
-        userVerification: "discouraged", // ✅ Add this to match frontend
+        userVerification: "discouraged",
       },
       timeout: 60000,
     });
@@ -58,12 +48,11 @@ export const generatePasskeyRegistrationOptions = async (userEmail) => {
 };
 
 /**
- * Step 2: Verify registration response
- * Frontend sends back the credential, we verify and store it
+ * Verify registration response
  *
- * @param response - Response from browser WebAuthn API
- * @param challenge - Original challenge we sent in step 1
- * @returns Verified credential with credentialID and publicKey
+ * @param response
+ * @param challenge
+ * @returns
  */
 export const verifyPasskeyRegistration = async (response, challenge) => {
   try {
@@ -97,23 +86,22 @@ export const verifyPasskeyRegistration = async (response, challenge) => {
   }
 };
 
-// ===== LOGIN HELPERS =====
+// LOGIN HELPERS
 
 /**
- * Step 1: Generate authentication options
- * Frontend calls this to get a login challenge
+ * Generate authentication options
  *
- * @param allowedCredentialIDs - Array of user's registered credential IDs
- * @returns Authentication options with challenge
+ * @param allowedCredentialIDs
+ * @returns
  */
 export const generatePasskeyLoginOptions = async (allowedCredentialIDs) => {
   try {
     const options = await generateAuthenticationOptions({
       rpID: rpID,
-      userVerification: "discouraged", // ✅ Match frontend
+      userVerification: "discouraged",
       timeout: 60000,
       allowCredentials: allowedCredentialIDs.map((id) => ({
-        id: id, // Already a buffer from backend
+        id: id,
         type: "public-key",
         transports: ["internal"],
       })),
@@ -128,13 +116,12 @@ export const generatePasskeyLoginOptions = async (allowedCredentialIDs) => {
 };
 
 /**
- * Step 2: Verify authentication response
- * Frontend sends back the signed response, we verify it
+ * Verify authentication response
  *
- * @param response - Response from browser WebAuthn API
- * @param challenge - Original challenge we sent
- * @param storedPublicKey - Public key we stored during registration
- * @param storedCounter - Counter we stored (prevents replay attacks)
+ * @param response
+ * @param challenge
+ * @param storedPublicKey
+ * @param storedCounter
  * @returns { verified: boolean, newCounter: number }
  */
 export const verifyPasskeyLogin = async (

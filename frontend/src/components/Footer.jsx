@@ -3,14 +3,6 @@ import { ShoppingCart, Mail } from "lucide-react";
 
 /**
  * Footer Component
- *
- * Simple footer with:
- * - Brand info
- * - Quick links
- * - Social links
- * - Copyright
- *
- * Responsive: stacks on mobile, horizontal on desktop
  */
 
 export default function Footer() {
@@ -24,13 +16,19 @@ export default function Footer() {
           {/* Brand Section */}
           <div className="col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 bg-primary-500 rounded-lg">
-                <ShoppingCart className="w-5 h-5 text-white" />
+              <div
+                className="p-2 bg-primary-500 rounded-lg"
+                style={{ transform: "rotate(-8deg)" }}
+              >
+                <ShoppingCart
+                  className="w-5 h-5 text-white"
+                  style={{ transform: "rotate(-8deg)" }}
+                />
               </div>
               <span className="font-bold text-lg text-white">CartNest</span>
             </div>
             <p className="text-gray-400 text-sm">
-              Fresh shopping experience for modern shoppers.
+              A simpler way to shop groceries
             </p>
           </div>
 

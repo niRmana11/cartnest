@@ -2,10 +2,6 @@ import mongoose from "mongoose";
 
 /**
  * Product Schema
- *
- * Represents items in the CartNest store
- * Each product belongs to a category (Vegetables, Fruits, etc.)
- * Images are stored on Cloudinary (URL + publicId for deletion)
  */
 
 const productSchema = new mongoose.Schema(
@@ -30,8 +26,6 @@ const productSchema = new mongoose.Schema(
       max: [999999, "Price too high"],
     },
     // Image stored on Cloudinary
-    // url: CDN link to display
-    // publicId: Cloudinary identifier for deletion
     image: {
       url: {
         type: String,
@@ -64,22 +58,19 @@ const productSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// ===== QUERY HELPERS =====
+// QUERY HELPERS
 
 /**
  * findActive: Helper to find only active products
- * Usage: Product.find().where('isActive').equals(true)
- * Or: Product.findActive()
  */
 productSchema.query.findActive = function () {
   return this.where({ isActive: true });
 };
 
-// ===== INSTANCE METHODS =====
+// INSTANCE METHODS
 
 /**
  * toJSON: Convert product to safe response object
- * Excludes internal fields before sending to frontend
  */
 productSchema.methods.toJSON = function () {
   const product = this.toObject();
@@ -93,12 +84,12 @@ productSchema.methods.isInStock = function (quantity = 1) {
   return this.stock >= quantity;
 };
 
-// ===== STATICS (Class Methods) =====
+// STATICS (Class Methods)
 
 /**
  * findByCategory: Find all active products in a category
- * @param categoryId - Category ObjectId
- * @returns Array of products
+ * @param categoryId
+ * @returns
  */
 productSchema.statics.findByCategory = function (categoryId) {
   return this.find({
@@ -109,8 +100,8 @@ productSchema.statics.findByCategory = function (categoryId) {
 
 /**
  * findByCategorySlug: Find products by category slug
- * @param slug - Category slug (e.g., 'vegetables')
- * @returns Array of products
+ * @param slug
+ * @returns
  */
 productSchema.statics.findByCategorySlug = async function (slug) {
   const Category = mongoose.model("Category");

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ShoppingCart, Menu, X, LogOut, User } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { useCartStore } from "../store/cartStore";
@@ -7,15 +7,6 @@ import axiosInstance from "../api/axiosInstance";
 
 /**
  * Navbar Component
- *
- * Features:
- * - CartNest logo + branding
- * - Cart icon with item count badge
- * - User menu dropdown (when logged in)
- * - Mobile hamburger menu
- * - Navigation links
- * - Responsive design (desktop nav, mobile hamburger)
- *
  */
 
 export default function Navbar() {
@@ -23,10 +14,10 @@ export default function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   // Get auth state from Zustand store
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, isLoading, logout } = useAuthStore();
 
   // Get cart item count from Zustand store
-  const { itemCount: cartItemCount } = useCartStore();
+  const { itemCount: cartItemCount, localClearCart } = useCartStore();
 
   const handleLogout = async () => {
     try {
@@ -35,6 +26,7 @@ export default function Navbar() {
       console.error("Logout failed:", error);
     } finally {
       logout();
+      localClearCart();
       setUserMenuOpen(false);
     }
   };
@@ -43,14 +35,20 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-white shadow-md border-b-2 border-primary-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* ===== LEFT: Logo + Brand ===== */}
+          {/* LEFT: Logo + Brand */}
           <Link
             to="/"
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             {/* Logo Icon */}
-            <div className="p-2 bg-primary-500 rounded-lg shadow-md">
-              <ShoppingCart className="w-6 h-6 text-white" />
+            <div
+              className="p-2 bg-primary-500 rounded-lg shadow-md"
+              style={{ transform: "rotate(-8deg)" }}
+            >
+              <ShoppingCart
+                className="w-6 h-6 text-white"
+                style={{ transform: "rotate(-8deg)" }}
+              />
             </div>
 
             {/* Brand Name */}
@@ -58,7 +56,9 @@ export default function Navbar() {
               <span className="font-bold text-xl text-primary-600">
                 CartNest
               </span>
-              <span className="text-xs text-gray-500">Fresh Shopping</span>
+              <span className="text-xs text-gray-500">
+                Your daily fresh market.
+              </span>
             </div>
 
             {/* Mobile: Just show CartNest */}
@@ -67,7 +67,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* ===== CENTER: Navigation Links (Desktop Only) ===== */}
+          {/* CENTER: Navigation Links (Desktop Only) */}
           <div className="hidden md:flex items-center gap-8">
             <Link
               to="/"
@@ -97,14 +97,14 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* ===== RIGHT: Cart Badge + User Menu ===== */}
+          {/* RIGHT: Cart Badge + User Menu */}
           <div className="flex items-center gap-4">
             {/* Cart Icon with Badge */}
             <Link
               to="/cart"
-              className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="relative p-2 rounded-lg transition-colors"
             >
-              <ShoppingCart className="w-6 h-6 text-gray-700" />
+              <ShoppingCart className="w-6 h-6 text-gray-700 hover:text-primary-600" />
 
               {/* Badge showing item count */}
               {cartItemCount > 0 && (
@@ -115,21 +115,21 @@ export default function Navbar() {
             </Link>
 
             {/* User Menu or Login Button */}
-            {isAuthenticated ? (
-              // ===== LOGGED IN: User Dropdown Menu =====
+            {isLoading ? null : isAuthenticated ? (
+              // LOGGED IN: User Dropdown Menu
               <div className="relative">
                 {/* User Avatar Button */}
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="flex items-center gap-2 p-2 rounded-lg transition-colors cursor-pointer"
                 >
                   {/* User Icon */}
                   <div className="p-2 bg-primary-100 rounded-full">
-                    <User className="w-5 h-5 text-primary-600" />
+                    <User className="w-5 h-5 text-primary-600 hover:text-primary-500" />
                   </div>
 
                   {/* User Name (Desktop) */}
-                  <span className="hidden sm:block text-sm font-medium text-gray-700">
+                  <span className="hidden sm:block text-sm font-medium text-gray-700 hover:text-primary-600">
                     {user?.name?.split(" ")[0]}
                   </span>
                 </button>
@@ -159,7 +159,6 @@ export default function Navbar() {
                         >
                           Admin Dashboard
                         </Link>
-                        <hr className="my-1" />
                       </>
                     )}
 
@@ -175,7 +174,7 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              // ===== NOT LOGGED IN: Login Button =====
+              // NOT LOGGED IN: Login Button
               <Link
                 to="/login"
                 className="btn-primary btn-sm hidden sm:inline-block"
@@ -198,7 +197,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* ===== MOBILE MENU (Hidden on Desktop) ===== */}
+        {/* MOBILE MENU (Hidden on Desktop) */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200 py-4 space-y-2">
             <Link

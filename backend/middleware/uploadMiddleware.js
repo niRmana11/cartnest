@@ -17,7 +17,7 @@ const fileFilter = (req, file, cb) => {
   const allowedMimes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
   if (allowedMimes.includes(file.mimetype)) {
-    cb(null, true); // Accept file
+    cb(null, true);
   } else {
     cb(
       new Error(
@@ -39,25 +39,17 @@ const upload = multer({
 
 /**
  * Middleware: Handle single file upload
- * Usage in routes: router.post('/product', uploadMiddleware.single('image'), controller)
  *
- * File available in req.file:
- * - req.file.buffer: File contents (for Cloudinary upload)
- * - req.file.originalname: Original filename
- * - req.file.mimetype: MIME type
- * - req.file.size: File size in bytes
  */
 export const uploadSingle = upload.single("image");
 
 /**
  * Middleware: Handle multiple file uploads
- * Usage: router.post('/products', uploadMiddleware.array('images', 5), controller)
  */
 export const uploadMultiple = upload.array("images", 5);
 
 /**
  * Error handler for multer errors
- * Usage: router.post('/product', uploadSingle, errorHandler)
  */
 export const handleUploadError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
@@ -84,7 +76,7 @@ export const handleUploadError = (err, req, res, next) => {
     });
   }
 
-  next(); // No error, proceed
+  next();
 };
 
 export default {

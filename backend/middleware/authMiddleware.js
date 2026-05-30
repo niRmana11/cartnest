@@ -9,21 +9,6 @@ import jwt from "jsonwebtoken";
 /**
  * verifyToken middleware
  *
- * Purpose: Protect routes that require authentication
- *
- * Usage in routes:
- *   router.get('/protected-route', verifyToken, (req, res) => {
- *     console.log(req.user.userId); // User is authenticated
- *   });
- *
- * Process:
- * 1. Extract token from HTTP-only cookie
- * 2. Verify token with JWT_SECRET
- * 3. Extract userId from token payload
- * 4. Attach userId to req.user
- * 5. Call next() to proceed to route handler
- *
- * If token is missing or invalid: Return 401 Unauthorized
  */
 export const verifyToken = (req, res, next) => {
   try {
@@ -41,7 +26,6 @@ export const verifyToken = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Attach user info to request object
-    // Now route handlers can access req.user.userId
     req.user = {
       userId: decoded.userId,
     };

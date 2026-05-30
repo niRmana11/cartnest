@@ -216,11 +216,12 @@ export default function AdminPage() {
           </div>
 
           <h1 className="text-4xl font-bold text-gray-900 mb-3">
-            Manage CartNest products
+            Manage CartNest products & categories
           </h1>
 
           <p className="text-lg text-gray-600 max-w-2xl">
-            Add, edit, and remove products shown in the customer shop.
+            Add, edit, and remove products and categories shown in the customer
+            shop.
           </p>
         </div>
       </section>

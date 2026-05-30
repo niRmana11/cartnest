@@ -19,11 +19,10 @@ import axiosInstance from "./api/axiosInstance";
  */
 
 function App() {
-  const { checkAuth } = useAuthStore();
   const { fetchCart, localClearCart } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
+  const { checkAuth, isAuthenticated, isLoading } = useAuthStore();
 
-  // ===== Initialize Auth & Cart on App Load =====
+  // Initialize Auth & Cart on App Load
   useEffect(() => {
     const initializeApp = async () => {
       try {
@@ -36,7 +35,7 @@ function App() {
     initializeApp();
   }, [checkAuth]);
 
-  // ===== Fetch Cart When User Logs In =====
+  // Fetch Cart When User Logs In
   useEffect(() => {
     if (isAuthenticated) {
       fetchCart();
@@ -45,31 +44,35 @@ function App() {
     }
   }, [isAuthenticated, fetchCart, localClearCart]);
 
+  if (isLoading) {
+    return null;
+  }
+
   return (
     <BrowserRouter>
       {/* Toast notifications */}
       <Toaster position="bottom-right" />
 
       <Routes>
-        {/* ===== PUBLIC ROUTES ===== */}
+        {/* PUBLIC ROUTES */}
 
         {/* Login page (no Layout) */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* ===== ALL ROUTES WITH LAYOUT ===== */}
+        {/* ALL ROUTES WITH LAYOUT */}
         <Route element={<Layout />}>
           {/* Public page */}
           <Route path="/" element={<HomePage />} />
           <Route path="/shop" element={<ShopPage />} />
 
-          {/* ===== PROTECTED ROUTES ===== */}
+          {/* PROTECTED ROUTES */}
           <Route element={<ProtectedRoute />}>
             <Route path="/cart" element={<CartPage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Route>
         </Route>
 
-        {/* ===== 404 PAGE ===== */}
+        {/* 404 PAGE */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>

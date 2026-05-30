@@ -3,11 +3,6 @@ import { useAuthStore } from "../store/authStore";
 
 /**
  * ProtectedRoute Component
- *
- * Wraps routes that require authentication
- * If user is not authenticated, redirects to login
- * If user is authenticated, renders the page
- *
  */
 
 export default function ProtectedRoute() {

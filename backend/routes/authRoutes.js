@@ -11,7 +11,7 @@ import {
 
 const router = express.Router();
 
-// ===== HELPER: Generate JWT Token =====
+// HELPER: Generate JWT Token
 const generateJWT = (userId) => {
   const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || "7d",
@@ -19,7 +19,7 @@ const generateJWT = (userId) => {
   return token;
 };
 
-// ===== HELPER: Set JWT Cookie =====
+// HELPER: Set JWT Cookie
 const setJWTCookie = (res, token) => {
   const isProd = process.env.NODE_ENV === "production";
   res.cookie("token", token, {
@@ -31,14 +31,14 @@ const setJWTCookie = (res, token) => {
   });
 };
 
-// ===== HELPER: Base64URL to Buffer =====
+// HELPER: Base64URL to Buffer
 const base64urlToBuffer = (base64url) => {
   const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
   const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
   return Buffer.from(padded, "base64");
 };
 
-// ===== HELPER: Buffer to Base64URL =====
+// HELPER: Buffer to Base64URL
 const bufferToBase64url = (buffer) => {
   return Buffer.from(buffer)
     .toString("base64")
@@ -47,7 +47,7 @@ const bufferToBase64url = (buffer) => {
     .replace(/=/g, "");
 };
 
-// ===== GOOGLE OAUTH =====
+// GOOGLE OAUTH
 router.get(
   "/google",
   passport.authenticate("google", {
@@ -73,7 +73,7 @@ router.get(
   },
 );
 
-// ===== FACEBOOK OAUTH =====
+// FACEBOOK OAUTH
 router.get(
   "/facebook",
   passport.authenticate("facebook", {
@@ -101,7 +101,7 @@ router.get(
   },
 );
 
-// ===== PROTECTED ROUTES =====
+// PROTECTED ROUTES
 router.get("/me", async (req, res) => {
   try {
     const token = req.cookies.token;
@@ -162,7 +162,7 @@ router.post("/logout", (req, res) => {
   });
 });
 
-// ===== PASSKEY ROUTES =====
+// PASSKEY ROUTES
 import * as webauthn from "../config/webauthn.js";
 
 router.post("/passkey/register/options", async (req, res) => {

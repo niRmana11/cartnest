@@ -28,6 +28,7 @@ const ALLOWED_CATEGORY_ICONS = [
   "shopping",
 ];
 
+// get all categories
 export const getCategories = async (req, res) => {
   try {
     const categories = await Category.find().sort({ name: 1 });
@@ -46,6 +47,7 @@ export const getCategories = async (req, res) => {
   }
 };
 
+// create a category
 export const createCategory = async (req, res) => {
   try {
     const { name, icon } = req.body;
@@ -91,6 +93,7 @@ export const createCategory = async (req, res) => {
   }
 };
 
+// update a category
 export const updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
@@ -139,6 +142,7 @@ export const updateCategory = async (req, res) => {
   }
 };
 
+// delete a category
 export const deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;

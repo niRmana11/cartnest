@@ -28,7 +28,7 @@ export default function HomePage() {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-50 text-primary-700 text-sm font-semibold mb-6 border border-primary-100">
             <ShoppingBag className="w-4 h-4" />
-            Fresh shopping made simple
+            Fresh picks for every day
           </div>
 
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 leading-tight mb-5">
@@ -110,7 +110,7 @@ export default function HomePage() {
                 </h3>
 
                 <p className="text-sm text-gray-600">
-                  Browse fresh {category.name.toLowerCase()} products.
+                  Find your favorite {category.name.toLowerCase()} in one place.
                 </p>
               </Link>
             );

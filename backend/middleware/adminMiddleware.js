@@ -10,16 +10,6 @@ import User from "../models/User.js";
 /**
  * requireAdmin middleware
  *
- * Purpose: Verify user is authenticated AND has admin role
- *
- * Usage in routes:
- *   router.post('/admin-endpoint', verifyToken, requireAdmin, controller)
- *
- * Process:
- * 1. verifyToken extracts userId from JWT
- * 2. This middleware checks if user.role === 'admin'
- * 3. If not admin, return 403 Forbidden
- * 4. If admin, proceed to next middleware/controller
  */
 export const requireAdmin = async (req, res, next) => {
   try {

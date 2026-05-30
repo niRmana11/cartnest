@@ -1,4 +1,4 @@
-import { ImagePlus, Loader, Save, X } from "lucide-react";
+import { ImagePlus, Loader, Save, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 const initialForm = {
@@ -139,7 +139,7 @@ export default function ProductForm({
         value={form.category}
         onChange={handleChange}
         required
-        className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:border-primary-400"
+        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:border-primary-400"
       >
         <option value="">Select category</option>
         {categories.map((category) => (
@@ -214,8 +214,10 @@ export default function ProductForm({
       >
         {isSaving ? (
           <Loader className="w-4 h-4 animate-spin" />
+        ) : editingProduct ? (
+          <Save className="w-5 h-5" />
         ) : (
-          <Save className="w-4 h-4" />
+          <Plus className="w-5 h-5" />
         )}
         {editingProduct ? "Update Product" : "Create Product"}
       </button>
