@@ -7,15 +7,6 @@ import axiosInstance from "../api/axiosInstance";
 
 /**
  * Navbar Component
- *
- * Features:
- * - CartNest logo + branding
- * - Cart icon with item count badge
- * - User menu dropdown (when logged in)
- * - Mobile hamburger menu
- * - Navigation links
- * - Responsive design (desktop nav, mobile hamburger)
- *
  */
 
 export default function Navbar() {
@@ -44,7 +35,7 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-white shadow-md border-b-2 border-primary-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* ===== LEFT: Logo + Brand ===== */}
+          {/* LEFT: Logo + Brand */}
           <Link
             to="/"
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
@@ -76,7 +67,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* ===== CENTER: Navigation Links (Desktop Only) ===== */}
+          {/* CENTER: Navigation Links (Desktop Only) */}
           <div className="hidden md:flex items-center gap-8">
             <Link
               to="/"
@@ -106,7 +97,7 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* ===== RIGHT: Cart Badge + User Menu ===== */}
+          {/* RIGHT: Cart Badge + User Menu */}
           <div className="flex items-center gap-4">
             {/* Cart Icon with Badge */}
             <Link
@@ -125,7 +116,7 @@ export default function Navbar() {
 
             {/* User Menu or Login Button */}
             {isLoading ? null : isAuthenticated ? (
-              // ===== LOGGED IN: User Dropdown Menu =====
+              // LOGGED IN: User Dropdown Menu
               <div className="relative">
                 {/* User Avatar Button */}
                 <button
@@ -183,7 +174,7 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              // ===== NOT LOGGED IN: Login Button =====
+              // NOT LOGGED IN: Login Button
               <Link
                 to="/login"
                 className="btn-primary btn-sm hidden sm:inline-block"
@@ -206,7 +197,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* ===== MOBILE MENU (Hidden on Desktop) ===== */}
+        {/* MOBILE MENU (Hidden on Desktop) */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200 py-4 space-y-2">
             <Link

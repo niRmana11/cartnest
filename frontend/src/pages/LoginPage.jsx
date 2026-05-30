@@ -231,7 +231,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden bg-[#f5f9f5]">
-      {/* ── Background pattern ── */}
+      {/* Background pattern */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Large soft blobs */}
         <div className="absolute -top-32 -right-32 w-125 h-125 rounded-full bg-primary-100 opacity-50" />
@@ -281,7 +281,7 @@ export default function LoginPage() {
         ))}
       </div>
 
-      {/* ── Card ── */}
+      {/* Card */}
       <div className="relative z-10 w-full max-w-105">
         {/* Brand header */}
         <div className="text-center mb-8">

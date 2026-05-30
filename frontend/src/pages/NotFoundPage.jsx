@@ -2,8 +2,6 @@ import { Link } from 'react-router-dom';
 
 /**
  * NotFoundPage Component
- * 
- * Shows when user visits route that doesn't exist
  */
 
 export default function NotFoundPage() {

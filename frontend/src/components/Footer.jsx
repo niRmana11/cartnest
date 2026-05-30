@@ -3,14 +3,6 @@ import { ShoppingCart, Mail } from "lucide-react";
 
 /**
  * Footer Component
- *
- * Simple footer with:
- * - Brand info
- * - Quick links
- * - Social links
- * - Copyright
- *
- * Responsive: stacks on mobile, horizontal on desktop
  */
 
 export default function Footer() {
