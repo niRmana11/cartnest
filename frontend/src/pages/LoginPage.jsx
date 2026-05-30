@@ -230,7 +230,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden bg-[#f5f9f5]">
+    <div className="h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden bg-[#f5f9f5]">
       {/* Background pattern */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Large soft blobs */}
@@ -300,7 +300,7 @@ export default function LoginPage() {
                 CartNest
               </p>
               <p className="text-xs text-primary-600 font-medium mt-0.5">
-                Fresh finds, fast.
+                Fresh Every Day.
               </p>
             </div>
           </div>
