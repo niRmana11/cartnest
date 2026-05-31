@@ -10,6 +10,7 @@ import ShopPage from "./pages/ShopPage";
 import CartPage from "./pages/CartPage";
 import AdminPage from "./pages/AdminPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import PrivacyPage from "./pages/PrivacyPage";
 import { useAuthStore } from "./store/authStore";
 import { useCartStore } from "./store/cartStore";
 import axiosInstance from "./api/axiosInstance";
@@ -74,6 +75,8 @@ function App() {
 
         {/* 404 PAGE */}
         <Route path="*" element={<NotFoundPage />} />
+        {/* Privacy PAGE */}
+        <Route path="/privacy" element={<PrivacyPage />} />
       </Routes>
     </BrowserRouter>
   );
