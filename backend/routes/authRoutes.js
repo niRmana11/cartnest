@@ -53,11 +53,15 @@ const getClientUrl = () => process.env.CLIENT_URL || "http://localhost:5173";
 // callback URL again, so keep duplicate requests from reaching Facebook.
 const facebookCodeStatuses = new Map();
 
-const setFacebookCodeStatus = (code, status) => {
+const setFacebookCodeStatus = (code, status, userId = null) => {
   if (!code || typeof code !== "string") return;
+
+  const existing = facebookCodeStatuses.get(code);
   facebookCodeStatuses.set(code, {
     status,
+    userId,
     expiresAt: Date.now() + 5 * 60 * 1000,
+    waiters: existing?.waiters || [],
   });
 };
 
@@ -66,7 +70,7 @@ const clearFacebookCodeStatus = (code) => {
   facebookCodeStatuses.delete(code);
 };
 
-const getFacebookCodeStatus = (code) => {
+const getFacebookCodeEntry = (code) => {
   if (!code || typeof code !== "string") return null;
 
   const entry = facebookCodeStatuses.get(code);
@@ -77,7 +81,33 @@ const getFacebookCodeStatus = (code) => {
     return null;
   }
 
-  return entry.status;
+  return entry;
+};
+
+const waitForFacebookCode = (code) => {
+  const entry = getFacebookCodeEntry(code);
+  if (!entry || entry.status !== "processing") {
+    return Promise.resolve(entry);
+  }
+
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      resolve(null);
+    }, 5000);
+
+    entry.waiters.push((result) => {
+      clearTimeout(timeout);
+      resolve(result);
+    });
+  });
+};
+
+const resolveFacebookCodeWaiters = (code, result) => {
+  const entry = getFacebookCodeEntry(code);
+  if (!entry?.waiters?.length) return;
+
+  const waiters = entry.waiters.splice(0);
+  waiters.forEach((resolve) => resolve(result));
 };
 
 // GOOGLE OAUTH
@@ -116,13 +146,27 @@ router.get(
 
 router.get(
   "/facebook/callback",
-  (req, res) => {
+  async (req, res) => {
     const clientUrl = getClientUrl();
     const authCode = req.query.code;
-    const codeStatus = getFacebookCodeStatus(authCode);
+    const codeEntry = getFacebookCodeEntry(authCode);
 
-    if (codeStatus === "processing" || codeStatus === "success") {
+    if (codeEntry?.status === "success" && codeEntry.userId) {
+      const token = generateJWT(codeEntry.userId);
+      setJWTCookie(res, token);
       return res.redirect(`${clientUrl}/`);
+    }
+
+    if (codeEntry?.status === "processing") {
+      const result = await waitForFacebookCode(authCode);
+
+      if (result?.status === "success" && result.userId) {
+        const token = generateJWT(result.userId);
+        setJWTCookie(res, token);
+        return res.redirect(`${clientUrl}/`);
+      }
+
+      return res.redirect(`${clientUrl}/login?error=auth_failed`);
     }
 
     setFacebookCodeStatus(authCode, "processing");
@@ -132,12 +176,14 @@ router.get(
       { session: false },
       (error, user) => {
         if (error) {
+          resolveFacebookCodeWaiters(authCode, { status: "failed" });
           clearFacebookCodeStatus(authCode);
           console.error("Facebook callback error:", error.message);
           return res.redirect(`${clientUrl}/login?error=auth_failed`);
         }
 
         if (!user) {
+          resolveFacebookCodeWaiters(authCode, { status: "failed" });
           clearFacebookCodeStatus(authCode);
           return res.redirect(`${clientUrl}/login?error=auth_failed`);
         }
@@ -145,10 +191,13 @@ router.get(
         try {
           const token = generateJWT(user._id);
           setJWTCookie(res, token);
-          setFacebookCodeStatus(authCode, "success");
+          const result = { status: "success", userId: user._id };
+          setFacebookCodeStatus(authCode, "success", user._id);
+          resolveFacebookCodeWaiters(authCode, result);
           console.log(`✅ User logged in via Facebook: ${user.email}`);
           return res.redirect(`${clientUrl}/`);
         } catch (tokenError) {
+          resolveFacebookCodeWaiters(authCode, { status: "failed" });
           clearFacebookCodeStatus(authCode);
           console.error("Facebook callback error:", tokenError);
           return res.redirect(
