@@ -47,6 +47,31 @@ const bufferToBase64url = (buffer) => {
     .replace(/=/g, "");
 };
 
+const getClientUrl = () => process.env.CLIENT_URL || "http://localhost:5173";
+
+// Facebook auth codes are one-time use. Some deployed/browser flows can hit the
+// callback URL again after a successful exchange, so remember recent successes.
+const consumedFacebookCodes = new Map();
+
+const rememberFacebookCode = (code) => {
+  if (!code || typeof code !== "string") return;
+  consumedFacebookCodes.set(code, Date.now() + 5 * 60 * 1000);
+};
+
+const wasFacebookCodeConsumed = (code) => {
+  if (!code || typeof code !== "string") return false;
+
+  const expiresAt = consumedFacebookCodes.get(code);
+  if (!expiresAt) return false;
+
+  if (expiresAt < Date.now()) {
+    consumedFacebookCodes.delete(code);
+    return false;
+  }
+
+  return true;
+};
+
 // GOOGLE OAUTH
 router.get(
   "/google",
@@ -83,22 +108,45 @@ router.get(
 
 router.get(
   "/facebook/callback",
-  passport.authenticate("facebook", {
-    session: false,
-    failureRedirect: `${process.env.CLIENT_URL || "http://localhost:5173"}/login?error=auth_failed`,
-  }),
   (req, res) => {
-    try {
-      const token = generateJWT(req.user._id);
-      setJWTCookie(res, token);
-      console.log(`✅ User logged in via Facebook: ${req.user.email}`);
-      res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/`);
-    } catch (error) {
-      console.error("Facebook callback error:", error);
-      res.redirect(
-        `${process.env.CLIENT_URL || "http://localhost:5173"}/login?error=token_generation_failed`,
-      );
-    }
+    passport.authenticate(
+      "facebook",
+      { session: false },
+      (error, user) => {
+        const clientUrl = getClientUrl();
+        const authCode = req.query.code;
+
+        if (error) {
+          console.error("Facebook callback error:", error.message);
+
+          if (
+            error.message?.includes("authorization code has been used") &&
+            wasFacebookCodeConsumed(authCode)
+          ) {
+            return res.redirect(`${clientUrl}/`);
+          }
+
+          return res.redirect(`${clientUrl}/login?error=auth_failed`);
+        }
+
+        if (!user) {
+          return res.redirect(`${clientUrl}/login?error=auth_failed`);
+        }
+
+        try {
+          const token = generateJWT(user._id);
+          setJWTCookie(res, token);
+          rememberFacebookCode(authCode);
+          console.log(`✅ User logged in via Facebook: ${user.email}`);
+          return res.redirect(`${clientUrl}/`);
+        } catch (tokenError) {
+          console.error("Facebook callback error:", tokenError);
+          return res.redirect(
+            `${clientUrl}/login?error=token_generation_failed`,
+          );
+        }
+      },
+    )(req, res);
   },
 );
 
