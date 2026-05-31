@@ -65,6 +65,8 @@ function App() {
           {/* Public page */}
           <Route path="/" element={<HomePage />} />
           <Route path="/shop" element={<ShopPage />} />
+          {/* Privacy PAGE */}
+          <Route path="/privacy" element={<PrivacyPage />} />
 
           {/* PROTECTED ROUTES */}
           <Route element={<ProtectedRoute />}>
@@ -75,8 +77,6 @@ function App() {
 
         {/* 404 PAGE */}
         <Route path="*" element={<NotFoundPage />} />
-        {/* Privacy PAGE */}
-        <Route path="/privacy" element={<PrivacyPage />} />
       </Routes>
     </BrowserRouter>
   );
