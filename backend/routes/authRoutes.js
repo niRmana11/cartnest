@@ -50,26 +50,34 @@ const bufferToBase64url = (buffer) => {
 const getClientUrl = () => process.env.CLIENT_URL || "http://localhost:5173";
 
 // Facebook auth codes are one-time use. Some deployed/browser flows can hit the
-// callback URL again after a successful exchange, so remember recent successes.
-const consumedFacebookCodes = new Map();
+// callback URL again, so keep duplicate requests from reaching Facebook.
+const facebookCodeStatuses = new Map();
 
-const rememberFacebookCode = (code) => {
+const setFacebookCodeStatus = (code, status) => {
   if (!code || typeof code !== "string") return;
-  consumedFacebookCodes.set(code, Date.now() + 5 * 60 * 1000);
+  facebookCodeStatuses.set(code, {
+    status,
+    expiresAt: Date.now() + 5 * 60 * 1000,
+  });
 };
 
-const wasFacebookCodeConsumed = (code) => {
-  if (!code || typeof code !== "string") return false;
+const clearFacebookCodeStatus = (code) => {
+  if (!code || typeof code !== "string") return;
+  facebookCodeStatuses.delete(code);
+};
 
-  const expiresAt = consumedFacebookCodes.get(code);
-  if (!expiresAt) return false;
+const getFacebookCodeStatus = (code) => {
+  if (!code || typeof code !== "string") return null;
 
-  if (expiresAt < Date.now()) {
-    consumedFacebookCodes.delete(code);
-    return false;
+  const entry = facebookCodeStatuses.get(code);
+  if (!entry) return null;
+
+  if (entry.expiresAt < Date.now()) {
+    facebookCodeStatuses.delete(code);
+    return null;
   }
 
-  return true;
+  return entry.status;
 };
 
 // GOOGLE OAUTH
@@ -109,37 +117,39 @@ router.get(
 router.get(
   "/facebook/callback",
   (req, res) => {
+    const clientUrl = getClientUrl();
+    const authCode = req.query.code;
+    const codeStatus = getFacebookCodeStatus(authCode);
+
+    if (codeStatus === "processing" || codeStatus === "success") {
+      return res.redirect(`${clientUrl}/`);
+    }
+
+    setFacebookCodeStatus(authCode, "processing");
+
     passport.authenticate(
       "facebook",
       { session: false },
       (error, user) => {
-        const clientUrl = getClientUrl();
-        const authCode = req.query.code;
-
         if (error) {
+          clearFacebookCodeStatus(authCode);
           console.error("Facebook callback error:", error.message);
-
-          if (
-            error.message?.includes("authorization code has been used") &&
-            wasFacebookCodeConsumed(authCode)
-          ) {
-            return res.redirect(`${clientUrl}/`);
-          }
-
           return res.redirect(`${clientUrl}/login?error=auth_failed`);
         }
 
         if (!user) {
+          clearFacebookCodeStatus(authCode);
           return res.redirect(`${clientUrl}/login?error=auth_failed`);
         }
 
         try {
           const token = generateJWT(user._id);
           setJWTCookie(res, token);
-          rememberFacebookCode(authCode);
+          setFacebookCodeStatus(authCode, "success");
           console.log(`✅ User logged in via Facebook: ${user.email}`);
           return res.redirect(`${clientUrl}/`);
         } catch (tokenError) {
+          clearFacebookCodeStatus(authCode);
           console.error("Facebook callback error:", tokenError);
           return res.redirect(
             `${clientUrl}/login?error=token_generation_failed`,
