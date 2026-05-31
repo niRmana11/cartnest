@@ -63,7 +63,7 @@ export default function HomePage() {
         <div className="bg-white rounded-lg shadow-md border border-gray-100 p-5">
           <div className="aspect-4/3 rounded-lg bg-primary-50 border border-primary-100 overflow-hidden">
             <img
-              src="/src/assets/hero.png"
+              src="/hero.png"
               alt="CartNest fresh shopping products"
               className="w-full h-full object-cover"
             />
