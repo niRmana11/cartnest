@@ -85,18 +85,18 @@ router.get(
   "/facebook/callback",
   passport.authenticate("facebook", {
     session: false,
-    failureRedirect: `${process.env.CLIENT_URL}/login?error=auth_failed`,
+    failureRedirect: `${process.env.CLIENT_URL || "http://localhost:5173"}/login?error=auth_failed`,
   }),
   (req, res) => {
     try {
       const token = generateJWT(req.user._id);
       setJWTCookie(res, token);
       console.log(`✅ User logged in via Facebook: ${req.user.email}`);
-      res.redirect(`${process.env.CLIENT_URL}/`);
+      res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/`);
     } catch (error) {
       console.error("Facebook callback error:", error);
       res.redirect(
-        `${process.env.CLIENT_URL}/login?error=token_generation_failed`,
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/login?error=token_generation_failed`,
       );
     }
   },
